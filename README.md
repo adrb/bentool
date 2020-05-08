@@ -21,5 +21,5 @@ $ make
 
 Commands history is saved to .bthistory file if it exists.
 
--- 
+## Author:
 <adrian.brzezinski at adrb.pl>
