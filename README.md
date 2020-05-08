@@ -13,7 +13,7 @@ If you never heard of that before, please read about it [here](https://github.co
 I'm not inherently against contact-tracing protocols, furthermore i firmly
 believe that it may help combat the COVID19 virus.
 
-That being said you should also be aware that hardware commonly used
+That being said you should also be aware that hardware commonly used today
 wasn't desinged to that kind of operations. That leads us to situation where,
 none of the Bluetooth-based protocols is completely secure.
 
