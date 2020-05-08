@@ -147,6 +147,8 @@ int xhci_open_dev( t_btdev *btdev ) {
     return -1;
   }
 
+//  hci_read_bd_addr(dd, &btdev->ba, HCI_REQ_TIMEOUT);
+
 return dd;
 }
 
@@ -280,6 +282,7 @@ int ble_beacon_en( t_btdev *btdev ) {
   adv_params.min_interval = htobs(0x0800);
   adv_params.max_interval = htobs(0x0800);
   adv_params.chan_map = 7;
+  adv_params.own_bdaddr_type = LE_RANDOM_ADDRESS;
 
   memset(&rq, 0, sizeof(rq));
   rq.ogf = OGF_LE_CTL;

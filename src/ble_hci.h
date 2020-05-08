@@ -48,6 +48,7 @@ typedef struct {
 } t_btdev;
 
 int xhci_dev_info(int s, int dev_id, long arg);
+int xhci_open_dev( t_btdev *btdev );
 
 int ble_randaddr( t_btdev *btdev );
 

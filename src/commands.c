@@ -97,11 +97,15 @@ return 0;
 
 int cmd_lerandaddr( int argc, char **argv) {
 
-  CHECK_ARGS_NUM(0);
+  char addr[18];
+  int dd = -1;
 
-return ble_randaddr(&btdev);
-/*
   CHECK_ARGS_MAXNUM(1);
+
+  // Read address if user didn't select device
+  if ( (dd = xhci_open_dev(&btdev)) < 0 )
+    return -1;
+  hci_close_dev(dd);
 
   if ( argc == 1 ) {
     goto print_ba;
@@ -113,10 +117,10 @@ return ble_randaddr(&btdev);
 
 print_ba:
 
-  printf("%s\n", batostr(&btdev.ba) );
+  ba2str(&btdev.ba, addr);
+  printf("Random BA: %s\n", addr);
 
 return 0;
-*/
 }
 
 int cmd_beacon( int argc, char **argv) {
@@ -209,7 +213,7 @@ t_command commands[] = {
     "\n\n\tAdvertise exposure notification beacons\n"
   },
   { cmd_lerandaddr, "lerandaddr",
-    "\n\n\tSet LE Random Address\n"
+    "[BDADDR]\n\n\tSet LE Random Address\n"
   },
   { cmd_dev, "dev",
     "[hciX]\n\n" \
