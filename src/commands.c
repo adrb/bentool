@@ -95,6 +95,30 @@ int cmd_dev( int argc, char **argv) {
 return 0;
 }
 
+int cmd_lerandaddr( int argc, char **argv) {
+
+  CHECK_ARGS_NUM(0);
+
+return ble_randaddr(&btdev);
+/*
+  CHECK_ARGS_MAXNUM(1);
+
+  if ( argc == 1 ) {
+    goto print_ba;
+  }
+
+  str2ba(argv[1], &btdev.ba);
+
+  ble_randaddr(&btdev);
+
+print_ba:
+
+  printf("%s\n", batostr(&btdev.ba) );
+
+return 0;
+*/
+}
+
 int cmd_beacon( int argc, char **argv) {
 
   CHECK_ARGS_NUM(0);
@@ -183,6 +207,9 @@ t_command commands[] = {
   },
   { cmd_beacon, "beacon",
     "\n\n\tAdvertise exposure notification beacons\n"
+  },
+  { cmd_lerandaddr, "lerandaddr",
+    "\n\n\tSet LE Random Address\n"
   },
   { cmd_dev, "dev",
     "[hciX]\n\n" \

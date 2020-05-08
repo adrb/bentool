@@ -41,7 +41,7 @@ void print_en_data( t_exposure_notification_data *en ) {
   printf("\n");
 }
 
-int ble_print_events( int fd ) {
+int ble_print_events( int dd ) {
 
   unsigned char buf[HCI_MAX_EVENT_SIZE], *ptr;
   struct hci_filter nf, of;
@@ -49,7 +49,7 @@ int ble_print_events( int fd ) {
   int len = -1;
 
   olen = sizeof(of);
-  if (getsockopt(fd, SOL_HCI, HCI_FILTER, &of, &olen) < 0) {
+  if (getsockopt(dd, SOL_HCI, HCI_FILTER, &of, &olen) < 0) {
     printf("Could not get socket options\n");
     return -1;
   }
@@ -58,7 +58,7 @@ int ble_print_events( int fd ) {
   hci_filter_set_ptype(HCI_EVENT_PKT, &nf);
   hci_filter_set_event(EVT_LE_META_EVENT, &nf);
 
-  if (setsockopt(fd, SOL_HCI, HCI_FILTER, &nf, sizeof(nf)) < 0) {
+  if (setsockopt(dd, SOL_HCI, HCI_FILTER, &nf, sizeof(nf)) < 0) {
     printf("Could not set socket options\n");
     return -1;
   }
@@ -68,7 +68,7 @@ int ble_print_events( int fd ) {
 
   while ( !abort_signal ) {
 
-    while ((len = read(fd, buf, sizeof(buf))) < 0) {
+    while ((len = read(dd, buf, sizeof(buf))) < 0) {
 
       if ( abort_signal ) goto done;
 
@@ -122,7 +122,7 @@ done:
 
   signal(SIGINT, SIG_DFL);
 
-  setsockopt(fd, SOL_HCI, HCI_FILTER, &of, sizeof(of));
+  setsockopt(dd, SOL_HCI, HCI_FILTER, &of, sizeof(of));
 
   if (len < 0 && !abort_signal )
     return -1;
@@ -131,7 +131,7 @@ return 0;
 }
 
 int xhci_open_dev( t_btdev *btdev ) {
-  int fd = -1;
+  int dd = -1;
 
   if (!btdev) return -1;
 
@@ -141,22 +141,22 @@ int xhci_open_dev( t_btdev *btdev ) {
     hci_devba(btdev->dev_id, &btdev->ba);
   }
 
-  fd = hci_open_dev(btdev->dev_id);
-  if (fd < 0) {
+  dd = hci_open_dev(btdev->dev_id);
+  if (dd < 0) {
     perror("Could not open device");
     return -1;
   }
 
-return fd;
+return dd;
 }
 
 int ble_scan_en( t_btdev *btdev ) {
 
-  int fd = -1;
+  int dd = -1;
 
   if (!btdev) return 1;
 
-  if ( (fd = xhci_open_dev(btdev)) < 0 )
+  if ( (dd = xhci_open_dev(btdev)) < 0 )
     return -1;
 
   /*
@@ -175,7 +175,7 @@ int ble_scan_en( t_btdev *btdev ) {
    * to:
    *   int - hci request timeout in ms
    */
-  if ( hci_le_set_scan_parameters(fd, 0, htobs(0x0010), htobs(0x0010),
+  if ( hci_le_set_scan_parameters(dd, 0, htobs(0x0010), htobs(0x0010),
         LE_RANDOM_ADDRESS, 0, HCI_REQ_TIMEOUT) < 0 ) {
     perror("Set scan parameters failed");
     return 0;
@@ -184,42 +184,60 @@ int ble_scan_en( t_btdev *btdev ) {
   /*
    * int hci_le_set_scan_enable(int dev_id, uint8_t enable, uint8_t filter_dup, int to);
    */
-  if ( hci_le_set_scan_enable(fd, 0x01, 0, HCI_REQ_TIMEOUT) < 0 ) {
+  if ( hci_le_set_scan_enable(dd, 0x01, 0, HCI_REQ_TIMEOUT) < 0 ) {
     perror("Enable scan failed");
     return 1;
   }
 
   printf("EN BLE Scan ...\n");
 
-  if ( ble_print_events(fd) < 0 ) {
+  if ( ble_print_events(dd) < 0 ) {
     perror("Could not receive advertising events");
     return 1;
   }
 
-  if ( hci_le_set_scan_enable(fd, 0x00, 0, HCI_REQ_TIMEOUT) < 0 ) {
+  if ( hci_le_set_scan_enable(dd, 0x00, 0, HCI_REQ_TIMEOUT) < 0 ) {
     perror("Disable scan failed");
     return 1;
   }
 
-  hci_close_dev(fd);
+  hci_close_dev(dd);
 
 return 0;
 }
 
-struct hci_request xble_hci_request(uint16_t ocf, int clen, void *status, void *cparam) {
+int ble_randaddr( t_btdev *btdev ) {
 
   struct hci_request rq;
-  memset(&rq, 0, sizeof(rq));
+  le_set_random_address_cp cp;
+  int dd = -1, status;
 
+  if (!btdev) return 1;
+
+  if ( (dd = xhci_open_dev(btdev)) < 0 )
+    return -1;
+
+  memset(&cp, 0, sizeof(cp));
+  bacpy(&cp.bdaddr, &btdev->ba);
+
+  memset(&rq, 0, sizeof(rq));
   rq.ogf = OGF_LE_CTL;
-  rq.ocf = ocf;
-  rq.cparam = cparam;
-  rq.clen = clen;
-  rq.rparam = status;
+  rq.ocf = OCF_LE_SET_RANDOM_ADDRESS;
+  rq.cparam = &cp;
+  rq.clen = LE_SET_RANDOM_ADDRESS_CP_SIZE;
+  rq.rparam = &status;
   rq.rlen = 1;
 
-return rq;
+  if ( hci_send_req(dd, &rq, HCI_REQ_TIMEOUT) < 0 ) {
+    perror("Can't set random address");
+    return -1;
+  }
+
+  hci_close_dev(dd);
+
+return 0;
 }
+
 
 // https://covid19-static.cdn-apple.com/applications/covid19/current/static/contact-tracing/pdf/ExposureNotification-BluetoothSpecificationv1.2.pdf
 le_set_advertising_data_cp set_adv_data_en( t_btdev *btdev ) {
@@ -247,11 +265,13 @@ return adv_data;
 }
 
 int ble_beacon_en( t_btdev *btdev ) {
-  int fd = -1, status;
+
+  struct hci_request rq;
+  int dd = -1, status;
 
   if (!btdev) return 1;
 
-  if ( (fd = xhci_open_dev(btdev)) < 0 )
+  if ( (dd = xhci_open_dev(btdev)) < 0 )
     return -1;
 
   // Set BLE advertisement parameters
@@ -261,10 +281,15 @@ int ble_beacon_en( t_btdev *btdev ) {
   adv_params.max_interval = htobs(0x0800);
   adv_params.chan_map = 7;
 
-  struct hci_request adv_params_rq = xble_hci_request(OCF_LE_SET_ADVERTISING_PARAMETERS,
-      LE_SET_ADVERTISING_PARAMETERS_CP_SIZE, &status, &adv_params);
+  memset(&rq, 0, sizeof(rq));
+  rq.ogf = OGF_LE_CTL;
+  rq.ocf = OCF_LE_SET_ADVERTISING_PARAMETERS;
+  rq.cparam = &adv_params;
+  rq.clen = LE_SET_ADVERTISING_PARAMETERS_CP_SIZE;
+  rq.rparam = &status;
+  rq.rlen = 1;
 
-  if ( hci_send_req(fd, &adv_params_rq, HCI_REQ_TIMEOUT) < 0 ) {
+  if ( hci_send_req(dd, &rq, HCI_REQ_TIMEOUT) < 0 ) {
     perror("Failed to set advertisement parameters data.");
     goto done;
   }
@@ -272,16 +297,21 @@ int ble_beacon_en( t_btdev *btdev ) {
   // Set BLE advertisement data.
   le_set_advertising_data_cp adv_data = set_adv_data_en(btdev);
 
-  struct hci_request adv_data_rq = xble_hci_request(OCF_LE_SET_ADVERTISING_DATA,
-    LE_SET_ADVERTISING_DATA_CP_SIZE, &status, &adv_data);
+  memset(&rq, 0, sizeof(rq));
+  rq.ogf = OGF_LE_CTL;
+  rq.ocf = OCF_LE_SET_ADVERTISING_DATA;
+  rq.cparam = &adv_data;
+  rq.clen = LE_SET_ADVERTISING_DATA_CP_SIZE;
+  rq.rparam = &status;
+  rq.rlen = 1;
 
-  if ( hci_send_req(fd, &adv_data_rq, HCI_REQ_TIMEOUT) < 0 ) {
+  if ( hci_send_req(dd, &rq, HCI_REQ_TIMEOUT) < 0 ) {
     perror("Failed to set advertising data.");
     goto done;
   }
 
   // Enable advertising
-  if ( hci_le_set_advertise_enable(fd, 0x01, HCI_REQ_TIMEOUT) < 0 ) {
+  if ( hci_le_set_advertise_enable(dd, 0x01, HCI_REQ_TIMEOUT) < 0 ) {
     perror("Failed to enable advertising.");
     goto done;
   }
@@ -299,13 +329,13 @@ int ble_beacon_en( t_btdev *btdev ) {
   signal(SIGINT, SIG_DFL);
 
   // Disable advertising
-  if ( hci_le_set_advertise_enable(fd, 0x00, HCI_REQ_TIMEOUT) < 0 ) {
+  if ( hci_le_set_advertise_enable(dd, 0x00, HCI_REQ_TIMEOUT) < 0 ) {
     perror("Failed to enable advertising.");
     goto done;
   }
 
 done:
-  hci_close_dev(fd);
+  hci_close_dev(dd);
 
 return 0;
 }

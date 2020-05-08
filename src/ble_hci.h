@@ -49,6 +49,8 @@ typedef struct {
 
 int xhci_dev_info(int s, int dev_id, long arg);
 
+int ble_randaddr( t_btdev *btdev );
+
 int ble_scan_en( t_btdev *btdev );
 int ble_beacon_en( t_btdev *btdev );
 
