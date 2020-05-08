@@ -30,6 +30,17 @@ int xhci_dev_info(int s, int dev_id, long arg) {
 return 0;
 }
 
+void print_en_data( t_exposure_notification_data *en ) {
+
+  if ( !en ) return;
+
+  printf("RPI: ");
+  printhex((unsigned char*)&en->rpi, 16);
+  printf(" AEM: ");
+  printhex((unsigned char*)&en->aem, 4);
+  printf("\n");
+}
+
 int ble_print_events( int fd ) {
 
   unsigned char buf[HCI_MAX_EVENT_SIZE], *ptr;
@@ -98,11 +109,7 @@ int ble_print_events( int fd ) {
       printf("%s, len %d, RSSI %d\n", addr, info->length, rssi );
 
       t_exposure_notification_data *en = (t_exposure_notification_data *) (info->data + 7);
-      printf("RPI: ");
-      printhex((unsigned char*)&en->rpi, 16);
-      printf(" AEM: ");
-      printhex((unsigned char*)&en->aem, 4);
-      printf("\n");
+      print_en_data(en);
 
       hexdump(info->data, info->length);
 
@@ -288,6 +295,7 @@ int ble_beacon_en( t_btdev *btdev ) {
   }
 
   printf("EN BLE advertising ...\n");
+  print_en_data(&btdev->en_data);
 
   abort_signal = 0;
   signal(SIGINT, &set_abort_signal);
