@@ -280,16 +280,8 @@ int ble_beacon_en( t_btdev *btdev ) {
     goto done;
   }
 
-  // Enable advertising.
-  le_set_advertise_enable_cp set_advertise;
-  memset(&set_advertise, 0, sizeof(set_advertise));
-  set_advertise.enable = 0x01;
-
-  struct hci_request enable_adv_rq = xble_hci_request(
-    OCF_LE_SET_ADVERTISE_ENABLE,
-    LE_SET_ADVERTISE_ENABLE_CP_SIZE, &status, &set_advertise);
-
-  if ( hci_send_req(fd, &enable_adv_rq, HCI_REQ_TIMEOUT) < 0 ) {
+  // Enable advertising
+  if ( hci_le_set_advertise_enable(fd, 0x01, HCI_REQ_TIMEOUT) < 0 ) {
     perror("Failed to enable advertising.");
     goto done;
   }
@@ -307,13 +299,7 @@ int ble_beacon_en( t_btdev *btdev ) {
   signal(SIGINT, SIG_DFL);
 
   // Disable advertising
-  memset(&set_advertise, 0, sizeof(set_advertise));
-  set_advertise.enable = 0x00;
-
-  xble_hci_request(OCF_LE_SET_ADVERTISE_ENABLE,
-    LE_SET_ADVERTISE_ENABLE_CP_SIZE, &status, &set_advertise);
-
-  if ( hci_send_req(fd, &enable_adv_rq, HCI_REQ_TIMEOUT) < 0 ) {
+  if ( hci_le_set_advertise_enable(fd, 0x00, HCI_REQ_TIMEOUT) < 0 ) {
     perror("Failed to enable advertising.");
     goto done;
   }
