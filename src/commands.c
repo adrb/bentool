@@ -213,7 +213,7 @@ t_command commands[] = {
     "\n\n\tAdvertise exposure notification beacons\n"
   },
   { cmd_lerandaddr, "lerandaddr",
-    "[BDADDR]\n\n\tSet LE Random Address\n"
+    "[BDADDR]\n\n\tDisplay or set BLE Random Address\n"
   },
   { cmd_dev, "dev",
     "[hciX]\n\n" \
