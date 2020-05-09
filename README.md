@@ -4,7 +4,7 @@ Bluetooth Exposure Notification beacons manipulation tool for Linux.
 ## What is it?
 
 Tool which demonstrates practical replay attack against new Bluetooth based
-contact tracing protols, like DP-3T or G+A.
+contact tracing G+A protocol.
 
 If you never heard of that before, please read about it [here](https://github.com/DP-3T/documents/blob/master/DP3T%20-%20Simplified%20Three%20Page%20Brief.pdf) and [here](https://www.apple.com/covid19/contacttracing/).
 
