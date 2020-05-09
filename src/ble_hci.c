@@ -94,7 +94,7 @@ int ble_print_events( int dd ) {
     le_advertising_info *info = (le_advertising_info *) (meta->data + 1);
     while ( reports_num-- ) {
 
-      // is it EN service?
+      // is it EN G+A service?
       if ( memcmp(info->data, "\x02\x01\x1a\x03\x03\x6f\xfd", 7) )
         continue;
 
@@ -281,6 +281,7 @@ int ble_beacon_en( t_btdev *btdev ) {
   memset(&adv_params, 0, sizeof(adv_params));
   adv_params.min_interval = htobs(0x0800);
   adv_params.max_interval = htobs(0x0800);
+  adv_params.advtype = 3;   // 0 - Connectable undirected advertising, 3 - Non connectable undirected advertising
   adv_params.chan_map = 7;
   adv_params.own_bdaddr_type = LE_RANDOM_ADDRESS;
 

@@ -25,7 +25,6 @@
 
 #define HCI_REQ_TIMEOUT 10000
 
-#pragma pack(1)
 typedef struct {
 
   uint8_t length;   // 0x17
@@ -35,8 +34,7 @@ typedef struct {
   uint8_t rpi[16];
   uint8_t aem[4];
 
-} t_exposure_notification_data;
-#pragma pack()
+} __attribute__ ((packed)) t_exposure_notification_data;
 
 typedef struct {
 

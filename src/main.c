@@ -19,6 +19,8 @@
 
 #include "commands.h"
 
+#define HISTORY_FILE ".bthistory"
+
 char* stripline( char *str ) {
   char *start, *end;
 
@@ -167,7 +169,12 @@ int execute_line(char *line) {
   return ((*(command->cmd))(argc, argv));
 }
 
-#define HISTORY_FILE ".bthistory"
+void help( char *name ) {
+
+  printf("\nBluetooth Exposure Notification beacons manipulation TOOL\n\n");
+  printf("Usage:\n\t%s [command] [command parameters]\n", name);
+
+}
 
 int main(int argc, char *argv[]) {
   char *line, *s;
@@ -175,7 +182,10 @@ int main(int argc, char *argv[]) {
   // execute single command
   if ( argc > 1 ) {
     t_command *command = command_search(argv[1]);
-    if ( !command ) return -1;
+    if ( !command ) {
+      help(argv[0]);
+      return 1;
+    }
 
     return ((*(command->cmd))(argc-1, argv+1));
   }
@@ -190,8 +200,8 @@ int main(int argc, char *argv[]) {
  
     if ( !(line = readline("> ")) ) {
 
-      char *args[2] = {"quit", "" };
-      cmd_quit(1, args );
+      char *quit_args[2] = {"quit", "" };
+      cmd_quit(1, quit_args );
 
       break;
     }
