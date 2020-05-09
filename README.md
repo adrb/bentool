@@ -10,7 +10,7 @@ If you never heard of that before, please read about it [here](https://github.co
 
 ## Why?
 
-I'm not inherently against contact-tracing protocols, furthermore i firmly
+I'm not inherently against contact-tracing protocols, furthermore I firmly
 believe that it may help combat the COVID19 virus.
 
 That being said you should also be aware that hardware commonly used today
@@ -21,13 +21,14 @@ You can read on some of threads [here](https://www.eff.org/deeplinks/2020/04/app
 
 ## Prerequisites
 
-Computer with Linux system and cheap USB Bluetooth dongle
+Linux system and cheap USB dongle with support for Bluetooth 4.0 version
+or never.
 
 ## Compilation
 
 You may need to install some non-standard packages:
 
-  - Debians: libreadline-dev libbluetooth-dev
+  - Debian like systems: gcc make libreadline-dev libbluetooth-dev
 
 ```
 $ make
