@@ -36,6 +36,9 @@ $ make
 
 ## Usage:
 
+Please keep in mind that it's work in progress, so expect seurious changes
+with every commit. The best you can do is run the program and type "help":
+
 ```
 # ./bentool
 > help

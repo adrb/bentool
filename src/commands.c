@@ -137,7 +137,7 @@ int cmd_scan( int argc, char **argv) {
 return ble_scan_en(&btdev);
 }
 
-int cmd_rpi( int argc, char **argv) {
+int cmd_ga_rpi( int argc, char **argv) {
 
   int len, i;
 
@@ -161,14 +161,14 @@ int cmd_rpi( int argc, char **argv) {
   }
 
 print_rpi:
-  printf("RPI: ");
+  printf("G+A RPI: ");
   printhex((void*)&btdev.en_data.rpi, 16);
   printf("\n");
 
 return 0;
 }
 
-int cmd_aem( int argc, char **argv) {
+int cmd_ga_aem( int argc, char **argv) {
 
   int len, i;
 
@@ -192,7 +192,7 @@ int cmd_aem( int argc, char **argv) {
   }
 
 print_aem:
-  printf("AEM: ");
+  printf("G+A AEM: ");
   printhex((void*)&btdev.en_data.aem, 4);
   printf("\n");
 
@@ -200,11 +200,11 @@ return 0;
 }
 
 t_command commands[] = {
-  { cmd_rpi, "rpi",
-    "[RPI]\n\n\tDisplay or set advertised RPI\n"
+  { cmd_ga_rpi, "ga_rpi",
+    "[RPI]\n\n\tDisplay or set advertised G+A RPI\n"
   },
-  { cmd_aem, "aem",
-    "[AEM]\n\n\tDisplay or set advertised AEM\n"
+  { cmd_ga_aem, "ga_aem",
+    "[AEM]\n\n\tDisplay or set advertised G+A AEM\n"
   },
   { cmd_scan, "scan",
     "\n\n\tScan for exposure notification beacons\n"
