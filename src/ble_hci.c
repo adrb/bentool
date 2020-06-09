@@ -95,7 +95,7 @@ int ble_print_events( int dd ) {
     while ( reports_num-- ) {
 
       // is it EN G+A service?
-      if ( memcmp(info->data, "\x02\x01\x1a\x03\x03\x6f\xfd", 7) )
+      if ( memcmp(info->data, "\x03\x03\x6f\xfd", 4) )
         continue;
 
       printf("\n");
@@ -108,7 +108,7 @@ int ble_print_events( int dd ) {
 
       printf("%s, len %d, RSSI %d\n", addr, info->length, rssi );
 
-      t_exposure_notification_data *en = (t_exposure_notification_data *) (info->data + 7);
+      t_exposure_notification_data *en = (t_exposure_notification_data *) (info->data + 4);
       print_en_data(en);
 
       hexdump(info->data, info->length);
@@ -191,7 +191,7 @@ int ble_scan_en( t_btdev *btdev ) {
     return 1;
   }
 
-  printf("EN BLE Scan ...\n");
+  printf("Scanning for Bluetooth Advertisement packets...\n");
 
   if ( ble_print_events(dd) < 0 ) {
     perror("Could not receive advertising events");
@@ -247,21 +247,17 @@ le_set_advertising_data_cp set_adv_data_en( t_btdev *btdev ) {
   le_set_advertising_data_cp adv_data;
   memset(&adv_data, 0, sizeof(adv_data));
 
-  adv_data.data[0] = 0x02;
-  adv_data.data[1] = 0x01;
-  adv_data.data[2] = 0x1a;
-
-  adv_data.data[3] = 0x03;
-  adv_data.data[4] = 0x03;
-  adv_data.data[5] = 0x6f;
-  adv_data.data[6] = 0xfd;
+  adv_data.data[0] = 0x03;
+  adv_data.data[1] = 0x03;
+  adv_data.data[2] = 0x6f;
+  adv_data.data[3] = 0xfd;
 
   btdev->en_data.length = 0x17;
   btdev->en_data.type = htobs(0x16);
   btdev->en_data.uuid = htobs(0xfd6f);
 
-  memcpy(adv_data.data + 7, (void*)&btdev->en_data, btdev->en_data.length + 1);
-  adv_data.length = 7 + btdev->en_data.length + 1;
+  memcpy(adv_data.data + 4, (void*)&btdev->en_data, btdev->en_data.length + 1);
+  adv_data.length = 4 + btdev->en_data.length + 1;
 
 return adv_data;
 }
