@@ -1,5 +1,5 @@
 /*
- * 
+ *
  * Adrian Brzezinski (2020) <adrian.brzezinski at adrb.pl>
  * License: GPLv2+
  *
@@ -36,7 +36,7 @@ void hexdump( unsigned char *data , int datalen ) {
   if ( !data || !datalen ) return;
 
   while( len < datalen ) {
-    
+
     printf("%04x  ",len);
 
     for ( col = 0; len+col < datalen && col < 16 ; col++ ) {

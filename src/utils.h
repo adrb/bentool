@@ -1,5 +1,5 @@
 /*
- * 
+ *
  * Adrian Brzezinski (2020) <adrian.brzezinski at adrb.pl>
  * License: GPLv2+
  *

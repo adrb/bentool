@@ -1,5 +1,5 @@
 /*
- * 
+ *
  * Adrian Brzezinski (2020) <adrian.brzezinski at adrb.pl>
  * License: GPLv2+
  *
@@ -122,9 +122,9 @@ int ble_scan_events( int dd ) {
     le_advertising_info *info = (le_advertising_info *) (meta->data + 1);
     while ( reports_num-- ) {
 
-      if ( badv_add(info) < 0 )
+      if ( badv_add(info, 1) < 0 )
         abort_signal = 1;
-
+/*
       // is it EN G+A service?
       if ( memcmp(info->data, "\x03\x03\x6f\xfd", 4) )
         continue;
@@ -146,7 +146,7 @@ int ble_scan_events( int dd ) {
 //      hexdump(info->data, info->length);
 
       printf("\n");
-
+*/
       info = (le_advertising_info *) (info->data + info->length + 1);
     }
   }
@@ -285,8 +285,8 @@ int ble_beacon_ga( btdev_t *btdev ) {
   // Set BLE advertisement parameters
   le_set_advertising_parameters_cp adv_params;
   memset(&adv_params, 0, sizeof(adv_params));
-  adv_params.min_interval = htobs(0x0800);
-  adv_params.max_interval = htobs(0x0800);
+  adv_params.min_interval = htobs(0x0140);  // 160 = 100ms, see BLE HCI spec for BT 5.0
+  adv_params.max_interval = htobs(0x0c80);  // 2000ms
   adv_params.advtype = 3;   // 0 - Connectable undirected advertising, 3 - Non connectable undirected advertising
   adv_params.chan_map = 7;
   adv_params.own_bdaddr_type = LE_RANDOM_ADDRESS; // Use random address

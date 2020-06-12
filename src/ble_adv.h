@@ -1,5 +1,5 @@
 /*
- * 
+ *
  * Adrian Brzezinski (2020) <adrian.brzezinski at adrb.pl>
  * License: GPLv2+
  *
@@ -53,10 +53,11 @@ typedef struct ble_pkt_s {
 } ble_pkt_t;
 
 int badv_init();
-int badv_add( le_advertising_info *info );
+int badv_add( le_advertising_info *info, int print_pkt );
 void badv_squash();
 
 void en_ga_print( en_ga_t *en );
+void ble_pkt_print( ble_pkt_t *pkt, int print_datadump );
 
 #endif // __BLE_ADV_H__
 

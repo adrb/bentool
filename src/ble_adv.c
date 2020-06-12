@@ -1,5 +1,5 @@
 /*
- * 
+ *
  * Adrian Brzezinski (2020) <adrian.brzezinski at adrb.pl>
  * License: GPLv2+
  *
@@ -35,7 +35,7 @@ int badv_init() {
 
       while ( pkt ) {
         ble_pkt_t *ppkt = pkt->ble_pkt_prev;
- 
+
         ble_pkt_free(pkt);
         pkt = ppkt;
       }
@@ -103,7 +103,7 @@ blescan_info2pkt_enomem:
   exit(ENOMEM);
 }
 
-int badv_add( le_advertising_info *info ) {
+int badv_add( le_advertising_info *info, int print_pkt ) {
 
   int64_t slot = -1;
 
@@ -136,6 +136,8 @@ int badv_add( le_advertising_info *info ) {
 //  printf("Slot set to : %ld\n", slot);
 
   ble_pkt_t *new_pkt = blescan_info2pkt(info);
+  if ( print_pkt )
+    ble_pkt_print(new_pkt, 0);
 
   // add packet to selected chain
   if ( slot != -1 ) {
@@ -185,5 +187,41 @@ void en_ga_print( en_ga_t *en ) {
   printf(", AEM: ");
   printhex((unsigned char*)&en->aem, 4);
 
+}
+
+void ble_pkt_print( ble_pkt_t *pkt, int print_datadump ) {
+
+  if ( !pkt ) return;
+
+  // Temporary skip other packets that we aren't interesed with
+  if ( pkt->data_type == BLE_ADV_INFO ) return;
+
+  print_tv( &pkt->recv_time );
+
+  char addr[18];
+  ba2str(&(pkt->ba), addr);
+
+  printf(" - BD %s, RSSI %d, ", addr, pkt->rssi );
+
+  switch (pkt->data_type) {
+    case BLE_ADV_INFO:
+      printf("(not EN)");
+
+      if ( print_datadump ) {
+        printf("\n");
+        hexdump(pkt->data.advinfo->data, pkt->data.advinfo->length);
+      }
+    break;
+    case BLE_GA_EN:
+      en_ga_print(pkt->data.ga);
+
+      if ( print_datadump ) {
+        printf("\n");
+        hexdump((uint8_t*)pkt->data.ga, sizeof(en_ga_t) );
+      }
+    break;
+  }
+
+  printf("\n");
 }
 
