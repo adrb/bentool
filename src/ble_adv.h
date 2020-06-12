@@ -12,8 +12,8 @@
 #include <bluetooth/hci.h>
 #include <bluetooth/hci_lib.h>
 
-#define BLE_PKTS_BUF_INIT 4096
-#define BLE_PKTS_BUF_MAX  (BLE_PKTS_BUF_INIT*4)
+#define BLE_PKTS_BUF_INIT 64
+#define BLE_PKTS_BUF_MAX  (BLE_PKTS_BUF_INIT << 6)
 
 typedef struct {
 

@@ -53,7 +53,7 @@ int cmd_help( int argc, char **argv) {
       }
     } else {
       printf("%s\t\t", commands[i].name);
-      
+
       col++;
       if ( !(col % 5) ) printf("\n");
     }

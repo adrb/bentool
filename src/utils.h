@@ -14,7 +14,6 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
-#include <sys/capability.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
