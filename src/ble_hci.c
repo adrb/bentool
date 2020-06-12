@@ -285,8 +285,8 @@ int ble_beacon_ga( btdev_t *btdev ) {
   // Set BLE advertisement parameters
   le_set_advertising_parameters_cp adv_params;
   memset(&adv_params, 0, sizeof(adv_params));
-  adv_params.min_interval = htobs(0x0140);  // 160 = 100ms, see BLE HCI spec for BT 5.0
-  adv_params.max_interval = htobs(0x0c80);  // 2000ms
+  adv_params.min_interval = htobs(0x0140);  // 1 = 0.625ms (16 = 10ms), see BLE HCI spec
+  adv_params.max_interval = htobs(0x0c80);  // 2000ms, BT Core 5.1 defines upper limit to 10.24sec (0x4000)
   adv_params.advtype = 3;   // 0 - Connectable undirected advertising, 3 - Non connectable undirected advertising
   adv_params.chan_map = 7;
   adv_params.own_bdaddr_type = LE_RANDOM_ADDRESS; // Use random address
