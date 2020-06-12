@@ -8,24 +8,16 @@
 #ifndef __COMMANDS_H__
 #define __COMMANDS_H__
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <getopt.h>
-
-#include "ble_hci.h"
-
 typedef int (tf_command) ( int, char** );
 
 typedef struct {
   tf_command *cmd;      // Function to call to do the job
   char *name;           // User printable name of the function
   char *desc;           // Short description for this function
-} t_command;
+} command_t;
 
 int cmd_quit( int argc, char **argv);   // exported for main()
 
-extern t_command commands[];  // defined at end of the commands.c file
+extern command_t commands[];  // defined at end of the commands.c file
 
 #endif // __COMMANDS_H__

@@ -5,7 +5,7 @@
  *
  */
 
-#include "ble_hci.h"
+#include "bentool.h"
 
 // abort current operation in case of ctrl-c
 int abort_signal = 0;
@@ -14,6 +14,28 @@ void set_abort_signal( int sig ) {
   if ( sig != SIGINT ) return;
 
   abort_signal = 1;
+}
+
+int xhci_open_dev( btdev_t *btdev ) {
+  int dd = -1;
+
+  if (!btdev) return -1;
+
+  // Get first available Bluetooth device
+  if (btdev->dev_id < 0) {
+    btdev->dev_id = hci_get_route(NULL);
+    hci_devba(btdev->dev_id, &btdev->ba);
+  }
+
+  dd = hci_open_dev(btdev->dev_id);
+  if (dd < 0) {
+    perror("Could not open device");
+    return -1;
+  }
+
+//  hci_read_bd_addr(dd, &btdev->ba, HCI_REQ_TIMEOUT);
+
+return dd;
 }
 
 int xhci_dev_info(int s, int dev_id, long arg) {
@@ -30,18 +52,21 @@ int xhci_dev_info(int s, int dev_id, long arg) {
 return 0;
 }
 
-void print_en_data( t_exposure_notification_data *en ) {
+void print_dev_info( btdev_t *btdev ) {
 
-  if ( !en ) return;
+  char addr[18];
 
-  printf("RPI: ");
-  printhex((unsigned char*)&en->rpi, 16);
-  printf(" AEM: ");
-  printhex((unsigned char*)&en->aem, 4);
+  if ( !btdev ) return;
+
+  ba2str(&btdev->ba, addr);
+  printf("Random BA: %s, ", addr);
+
+  badv_ga_print(&btdev->ga_en);
+
   printf("\n");
 }
 
-int ble_print_events( int dd ) {
+int ble_scan_events( int dd ) {
 
   unsigned char buf[HCI_MAX_EVENT_SIZE], *ptr;
   struct hci_filter nf, of;
@@ -62,6 +87,9 @@ int ble_print_events( int dd ) {
     printf("Could not set socket options\n");
     return -1;
   }
+
+  // Allocate advertisements buffer
+  if ( badv_init() < 0 ) return -1;
 
   abort_signal = 0;
   signal(SIGINT, &set_abort_signal);
@@ -94,27 +122,32 @@ int ble_print_events( int dd ) {
     le_advertising_info *info = (le_advertising_info *) (meta->data + 1);
     while ( reports_num-- ) {
 
+      if ( badv_add(info) < 0 )
+        abort_signal = 1;
+
       // is it EN G+A service?
       if ( memcmp(info->data, "\x03\x03\x6f\xfd", 4) )
         continue;
 
-      printf("\n");
-      printts();
+      struct timeval tv;
+      gettimeofday( &tv, NULL );
+      print_tv( &tv );
 
       char addr[18];
       ba2str(&(info->bdaddr), addr);
 
       int rssi = (int8_t) ( *(info->data + info->length) );
 
-      printf("%s, len %d, RSSI %d\n", addr, info->length, rssi );
+      printf(" - BD %s, Data len %d, RSSI %d, ", addr, info->length, rssi );
 
-      t_exposure_notification_data *en = (t_exposure_notification_data *) (info->data + 4);
-      print_en_data(en);
+      badv_ga_print( (en_ga_t*) (info->data + 4) );
 
-      hexdump(info->data, info->length);
+//      printf("\n");
+//      hexdump(info->data, info->length);
+
+      printf("\n");
 
       info = (le_advertising_info *) (info->data + info->length + 1);
-
     }
   }
 
@@ -130,29 +163,7 @@ done:
 return 0;
 }
 
-int xhci_open_dev( t_btdev *btdev ) {
-  int dd = -1;
-
-  if (!btdev) return -1;
-
-  // Get first available Bluetooth device
-  if (btdev->dev_id < 0) {
-    btdev->dev_id = hci_get_route(NULL);
-    hci_devba(btdev->dev_id, &btdev->ba);
-  }
-
-  dd = hci_open_dev(btdev->dev_id);
-  if (dd < 0) {
-    perror("Could not open device");
-    return -1;
-  }
-
-//  hci_read_bd_addr(dd, &btdev->ba, HCI_REQ_TIMEOUT);
-
-return dd;
-}
-
-int ble_scan_en( t_btdev *btdev ) {
+int ble_scan( btdev_t *btdev ) {
 
   int dd = -1;
 
@@ -193,7 +204,7 @@ int ble_scan_en( t_btdev *btdev ) {
 
   printf("Scanning for Bluetooth Advertisement packets...\n");
 
-  if ( ble_print_events(dd) < 0 ) {
+  if ( ble_scan_events(dd) < 0 ) {
     perror("Could not receive advertising events");
     return 1;
   }
@@ -208,7 +219,7 @@ int ble_scan_en( t_btdev *btdev ) {
 return 0;
 }
 
-int ble_randaddr( t_btdev *btdev ) {
+int ble_randaddr( btdev_t *btdev ) {
 
   struct hci_request rq;
   le_set_random_address_cp cp;
@@ -240,9 +251,8 @@ int ble_randaddr( t_btdev *btdev ) {
 return 0;
 }
 
-
 // https://covid19-static.cdn-apple.com/applications/covid19/current/static/contact-tracing/pdf/ExposureNotification-BluetoothSpecificationv1.2.pdf
-le_set_advertising_data_cp set_adv_data_en( t_btdev *btdev ) {
+le_set_advertising_data_cp set_adv_data_en( btdev_t *btdev ) {
 
   le_set_advertising_data_cp adv_data;
   memset(&adv_data, 0, sizeof(adv_data));
@@ -252,24 +262,24 @@ le_set_advertising_data_cp set_adv_data_en( t_btdev *btdev ) {
   adv_data.data[2] = 0x6f;
   adv_data.data[3] = 0xfd;
 
-  btdev->en_data.length = 0x17;
-  btdev->en_data.type = htobs(0x16);
-  btdev->en_data.uuid = htobs(0xfd6f);
+  btdev->ga_en.length = 0x17;
+  btdev->ga_en.type = htobs(0x16);
+  btdev->ga_en.uuid = htobs(0xfd6f);
 
-  memcpy(adv_data.data + 4, (void*)&btdev->en_data, btdev->en_data.length + 1);
-  adv_data.length = 4 + btdev->en_data.length + 1;
+  memcpy(adv_data.data + 4, (void*)&btdev->ga_en, btdev->ga_en.length + 1);
+  adv_data.length = 4 + btdev->ga_en.length + 1;
 
 return adv_data;
 }
 
-int ble_beacon_en( t_btdev *btdev ) {
+int ble_beacon_ga( btdev_t *btdev ) {
 
   struct hci_request rq;
   int dd = -1, status;
 
   if (!btdev) return 1;
 
-  if ( (dd = xhci_open_dev(btdev)) < 0 )
+  if ( (dd = xhci_open_dev(btdev)) < 0 || ble_randaddr(btdev) < 0 )
     return -1;
 
   // Set BLE advertisement parameters
@@ -279,7 +289,7 @@ int ble_beacon_en( t_btdev *btdev ) {
   adv_params.max_interval = htobs(0x0800);
   adv_params.advtype = 3;   // 0 - Connectable undirected advertising, 3 - Non connectable undirected advertising
   adv_params.chan_map = 7;
-  adv_params.own_bdaddr_type = LE_RANDOM_ADDRESS;
+  adv_params.own_bdaddr_type = LE_RANDOM_ADDRESS; // Use random address
 
   memset(&rq, 0, sizeof(rq));
   rq.ogf = OGF_LE_CTL;
@@ -316,14 +326,15 @@ int ble_beacon_en( t_btdev *btdev ) {
     goto done;
   }
 
-  printf("EN BLE advertising ...\n");
-  print_en_data(&btdev->en_data);
+  printf("Advertising G+A notifications...\n");
+
+  print_dev_info(btdev);
 
   abort_signal = 0;
   signal(SIGINT, &set_abort_signal);
 
   while ( !abort_signal ) {
-    usleep(5000000);
+    usleep(1000000);
   }
 
   signal(SIGINT, SIG_DFL);

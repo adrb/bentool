@@ -137,7 +137,7 @@ char **command_completion(
 return rl_completion_matches(text, command_generator);
 }
 
-t_command* command_search( char *name ) {
+command_t* command_search( char *name ) {
 
   int i;
 
@@ -150,7 +150,7 @@ t_command* command_search( char *name ) {
 
   fprintf(stderr, "%s: No such command, try 'help'\n", name);
 
-return (t_command *)NULL;
+return (command_t *)NULL;
 }
 
 // Execute a command line.
@@ -158,7 +158,7 @@ int execute_line(char *line) {
   
   int argc;
   char *argv[TOKENIZEARGMAX];
-  t_command *command = (t_command *)NULL;
+  command_t *command = (command_t *)NULL;
 
   if ( !tokenizestr(line, argv, &argc) ) return -1;
 
@@ -181,7 +181,7 @@ int main(int argc, char *argv[]) {
 
   // execute single command
   if ( argc > 1 ) {
-    t_command *command = command_search(argv[1]);
+    command_t *command = command_search(argv[1]);
     if ( !command ) {
       help(argv[0]);
       return 1;

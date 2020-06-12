@@ -21,36 +21,25 @@
 #include <bluetooth/hci.h>
 #include <bluetooth/hci_lib.h>
 
-#include "utils.h"
+#include "ble_adv.h"
 
-#define HCI_REQ_TIMEOUT 10000
-
-typedef struct {
-
-  uint8_t length;   // 0x17
-  uint8_t type;     // 0x16
-  uint16_t uuid;    // 0xfd6f
-
-  uint8_t rpi[16];
-  uint8_t aem[4];
-
-} __attribute__ ((packed)) t_exposure_notification_data;
+#define HCI_REQ_TIMEOUT 5000
 
 typedef struct {
 
   int dev_id;
   bdaddr_t ba;
 
-  t_exposure_notification_data en_data;
+  en_ga_t ga_en;
 
-} t_btdev;
+} btdev_t;
 
 int xhci_dev_info(int s, int dev_id, long arg);
-int xhci_open_dev( t_btdev *btdev );
+int xhci_open_dev( btdev_t *btdev );
 
-int ble_randaddr( t_btdev *btdev );
+int ble_randaddr( btdev_t *btdev );
 
-int ble_scan_en( t_btdev *btdev );
-int ble_beacon_en( t_btdev *btdev );
+int ble_scan( btdev_t *btdev );
+int ble_beacon_ga( btdev_t *btdev );
 
 #endif // __BLE_HCI_H__

@@ -5,15 +5,10 @@
  *
  */
 
-#include <sys/ioctl.h>
-#include <sys/socket.h>
-#include <bluetooth/bluetooth.h>
-#include <bluetooth/hci.h>
-#include <bluetooth/hci_lib.h>
-
 #include "commands.h"
+#include "bentool.h"
 
-t_btdev btdev = {
+btdev_t btdev = {
   .dev_id = -1,
 };
 
@@ -113,8 +108,6 @@ int cmd_lerandaddr( int argc, char **argv) {
 
   str2ba(argv[1], &btdev.ba);
 
-  ble_randaddr(&btdev);
-
 print_ba:
 
   ba2str(&btdev.ba, addr);
@@ -127,14 +120,14 @@ int cmd_beacon( int argc, char **argv) {
 
   CHECK_ARGS_NUM(0);
 
-return ble_beacon_en(&btdev);
+return ble_beacon_ga(&btdev);
 }
 
 int cmd_scan( int argc, char **argv) {
 
   CHECK_ARGS_NUM(0);
 
-return ble_scan_en(&btdev);
+return ble_scan(&btdev);
 }
 
 int cmd_ga_rpi( int argc, char **argv) {
@@ -157,12 +150,12 @@ int cmd_ga_rpi( int argc, char **argv) {
     unsigned int val = 0;
     sscanf(argv[1]+i, "%02x", &val);
 
-    btdev.en_data.rpi[i >> 1] = val & 0xff;
+    btdev.ga_en.rpi[i >> 1] = val & 0xff;
   }
 
 print_rpi:
   printf("G+A RPI: ");
-  printhex((void*)&btdev.en_data.rpi, 16);
+  printhex((void*)&btdev.ga_en.rpi, 16);
   printf("\n");
 
 return 0;
@@ -188,18 +181,18 @@ int cmd_ga_aem( int argc, char **argv) {
     unsigned int val = 0;
     sscanf(argv[1]+i, "%02x", &val);
 
-    btdev.en_data.aem[i >> 1] = val & 0xff;
+    btdev.ga_en.aem[i >> 1] = val & 0xff;
   }
 
 print_aem:
   printf("G+A AEM: ");
-  printhex((void*)&btdev.en_data.aem, 4);
+  printhex((void*)&btdev.ga_en.aem, 4);
   printf("\n");
 
 return 0;
 }
 
-t_command commands[] = {
+command_t commands[] = {
   { cmd_ga_rpi, "ga_rpi",
     "[RPI]\n\n\tDisplay or set advertised G+A RPI\n"
   },

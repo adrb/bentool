@@ -66,19 +66,16 @@ void hexdump( unsigned char *data , int datalen ) {
 
 void printhex(unsigned char *data , int datalen) {
 
-  int i;
-
-  for ( i = 0 ; i < datalen ; i++ )
+  for ( int i = 0 ; i < datalen ; i++ )
     printf("%02x", data[i]);
 
 }
 
-void printts() {
+void print_tv( struct timeval *tv ) {
 
-  time_t t = time(NULL);
-
-  struct tm *tm = localtime(&t);
-  printf("%s", asctime(tm));
+  struct tm *tm = localtime(&tv->tv_sec);
+  printf("%04d-%02d-%02d %02d:%02d:%02d.%03ld", tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
+      tm->tm_hour, tm->tm_min, tm->tm_sec, (tv->tv_usec/1000));
 
 }
 

@@ -21,6 +21,6 @@
 char *hrbytes(char *buf, unsigned int buflen, long long bytes);
 void hexdump(unsigned char *data , int datalen);
 void printhex(unsigned char *data , int datalen);
-void printts();
+void print_tv( struct timeval *tv );
 
 #endif // __UTILS_H__
