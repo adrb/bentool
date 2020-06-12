@@ -61,7 +61,7 @@ void print_dev_info( btdev_t *btdev ) {
   ba2str(&btdev->ba, addr);
   printf("Random BA: %s, ", addr);
 
-  badv_ga_print(&btdev->ga_en);
+  en_ga_print(&btdev->ga_en);
 
   printf("\n");
 }
@@ -140,7 +140,7 @@ int ble_scan_events( int dd ) {
 
       printf(" - BD %s, Data len %d, RSSI %d, ", addr, info->length, rssi );
 
-      badv_ga_print( (en_ga_t*) (info->data + 4) );
+      en_ga_print( (en_ga_t*) (info->data + 4) );
 
 //      printf("\n");
 //      hexdump(info->data, info->length);

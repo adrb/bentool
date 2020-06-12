@@ -55,7 +55,8 @@ typedef struct ble_pkt_s {
 int badv_init();
 int badv_add( le_advertising_info *info );
 void badv_squash();
-void badv_ga_print( en_ga_t *en );
+
+void en_ga_print( en_ga_t *en );
 
 #endif // __BLE_ADV_H__
 

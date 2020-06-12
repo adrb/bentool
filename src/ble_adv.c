@@ -176,7 +176,7 @@ void badv_squash() {
 
 }
 
-void badv_ga_print( en_ga_t *en ) {
+void en_ga_print( en_ga_t *en ) {
 
   if ( !en ) return;
 
