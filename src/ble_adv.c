@@ -264,8 +264,8 @@ int badv_track_devices() {
         continue;
       }
 
-      // Long gap?
-      if ( (next_pkt->recv_time.tv_sec - last_pkt->recv_time.tv_sec) > 20 ) {
+      // Too long gap?
+      if ( (next_pkt->recv_time.tv_sec - last_pkt->recv_time.tv_sec) > 11 ) {
         continue;
       }
 
