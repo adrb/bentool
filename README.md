@@ -44,6 +44,31 @@ with every commit. The best you can do is run the program and type "help":
 > help
 ```
 
+Sending customized EN data (Ctrl-C to stop):
+
+```
+# ./bentool
+> dev hci0
+> ga_rpi 12340000000000000000000000000000
+G+A RPI: 12340000000000000000000000000000
+> ga_aem 12345678
+G+A AEM: 12345678
+> lerandaddr 01:02:03:04:05:06
+Random BA: 01:02:03:04:05:06
+> beacon
+Advertising G+A notifications...
+```
+
+Scanning for EN data broadcasted by other devices (Ctrl-C to stop):
+
+```
+# ./bentool
+> scan
+Scanning for Bluetooth Advertisement packets...
+2020-06-13 14:49:35.705 - BD 00:19:86:00:04:FD, RSSI -39, RPI: 12340000000000000000000000000000, AEM: 12345678
+^C> track
+```
+
 Commands history is saved to .bthistory file if it exists.
 
 ## Author:
