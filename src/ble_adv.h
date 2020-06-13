@@ -53,11 +53,12 @@ typedef struct ble_pkt_s {
 } ble_pkt_t;
 
 int badv_init();
-int badv_add( le_advertising_info *info, int print_pkt );
+int badv_add( le_advertising_info *info, int print_pkts );
 int badv_track_devices();
 
 void en_ga_print( en_ga_t *en );
 void ble_pkt_print( ble_pkt_t *pkt, int print_datadump );
+void badv_print();
 
 #endif // __BLE_ADV_H__
 

@@ -124,29 +124,7 @@ int ble_scan_events( int dd ) {
 
       if ( badv_add(info, 1) < 0 )
         abort_signal = 1;
-/*
-      // is it EN G+A service?
-      if ( memcmp(info->data, "\x03\x03\x6f\xfd", 4) )
-        continue;
 
-      struct timeval tv;
-      gettimeofday( &tv, NULL );
-      print_tv( &tv );
-
-      char addr[18];
-      ba2str(&(info->bdaddr), addr);
-
-      int rssi = (int8_t) ( *(info->data + info->length) );
-
-      printf(" - BD %s, Data len %d, RSSI %d, ", addr, info->length, rssi );
-
-      en_ga_print( (en_ga_t*) (info->data + 4) );
-
-//      printf("\n");
-//      hexdump(info->data, info->length);
-
-      printf("\n");
-*/
       info = (le_advertising_info *) (info->data + info->length + 1);
     }
   }

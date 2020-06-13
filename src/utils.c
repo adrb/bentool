@@ -79,3 +79,12 @@ void print_tv( struct timeval *tv ) {
 
 }
 
+void print_busyloop() {
+
+  char *tab = "-\\|/";
+  static int i = 0;
+
+  printf("\b%c", tab[i++ % 4] );
+  fflush(stdout);
+}
+

@@ -134,7 +134,12 @@ int cmd_track( int argc, char **argv) {
 
   CHECK_ARGS_NUM(0);
 
-return badv_track_devices();
+  // Loop until we merge all possible devices
+  while ( badv_track_devices() > 0 ) ;
+
+  badv_print();
+
+return 0;
 }
 
 int cmd_ga_rpi( int argc, char **argv) {

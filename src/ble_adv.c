@@ -150,7 +150,7 @@ blescan_info2pkt_enomem:
   exit(ENOMEM);
 }
 
-int badv_add( le_advertising_info *info, int print_pkt ) {
+int badv_add( le_advertising_info *info, int print_pkts ) {
 
   int64_t slot = -1;
 
@@ -183,8 +183,10 @@ int badv_add( le_advertising_info *info, int print_pkt ) {
 //  printf("Slot set to : %ld\n", slot);
 
   ble_pkt_t *new_pkt = blescan_info2pkt(info);
-  if ( print_pkt ) {
+  if ( print_pkts ) {
     ble_pkt_print(new_pkt, 0);
+  } else {
+    print_busyloop();
   }
 
   // add packet to selected chain
@@ -225,18 +227,12 @@ return 0;
 int badv_track_devices() {
 
   ble_pkt_t *pkt, *last_pkt, *next_pkt;
+  int merges = 0;
 
   if ( !ble_pkts ) {
     fprintf(stderr, "No data to track\n");
     return -1;
   }
-
-/*
-  printf("Captured devices:\n");
-  for ( uint32_t i = 0 ; i < ble_pkts_size ; i++ ) {
-    ble_pkt_print(ble_pkts[i], 0);
-  }
-*/
 
   for ( uint32_t i = 0 ; i < ble_pkts_size ; i++ ) {
 
@@ -246,26 +242,6 @@ int badv_track_devices() {
     if ( !pkt ) continue;
 
     last_pkt = pkt;
-
-    // Search for changed data within current chain
-    while ( pkt && pkt->ble_pkt_prev ) {
-
-      // Skip other packets (we may analyze it in further versions)
-      if ( pkt->data_type != BLE_GA_EN )
-        continue;
-
-      // Same data?
-      if ( memcmp(pkt->data.ga->rpi, pkt->ble_pkt_prev->data.ga->rpi, 16) ||
-            memcmp(pkt->data.ga->aem, pkt->ble_pkt_prev->data.ga->aem, 4)) {
-
-        printf("Device has changed only EN data\n\tfrom ");
-        ble_pkt_print(pkt->ble_pkt_prev, 0);
-        printf("\t  to ");
-        ble_pkt_print(pkt, 0);
-      }
-
-      pkt = pkt->ble_pkt_prev;
-    }
 
     // Try to gues to what data, device switched with new EN interval
     // (match last packet with first packet belonging to next chain)
@@ -298,15 +274,52 @@ int badv_track_devices() {
         continue;
       }
 
-      printf("Device changed notifications\n\tfrom ");
-      ble_pkt_print(last_pkt, 0);
-      printf("\t  to ");
-      ble_pkt_print(next_pkt, 0);
+      // If it's the same device, merge old chain to newer chain
+      for ( pkt = ble_pkts[j] ; pkt && pkt->ble_pkt_prev ; pkt = pkt->ble_pkt_prev ) ; // go to first packet in chain
+
+      pkt->ble_pkt_prev = ble_pkts[i];
+      ble_pkts[i] = NULL;
+
+      merges++;
 
       break;
     }
   }
 
-return 0;
+return merges;
 }
 
+void badv_print() {
+
+  ble_pkt_t *newer_pkt, *pkt;
+
+  for ( uint32_t i = 0 ; i < ble_pkts_size ; i++ ) {
+
+    // Print changes for chain
+    for ( pkt = ble_pkts[i], newer_pkt = NULL ; pkt ; pkt = pkt->ble_pkt_prev ) {
+
+      if ( pkt->data_type != BLE_GA_EN ) continue;
+
+      if ( !newer_pkt ) {
+        // Saver newer packet for further comparison
+        newer_pkt = pkt;
+        continue;
+      }
+
+      // Same data?
+      if ( memcmp(pkt->data.ga->rpi, newer_pkt->data.ga->rpi, 16) ||
+              memcmp(pkt->data.ga->aem, newer_pkt->data.ga->aem, 4) ||
+              bacmp(&pkt->ba, &newer_pkt->ba)
+         ) {
+
+          printf("Device %d has changed EN data\n\tfrom ", i);
+          ble_pkt_print(pkt->ble_pkt_prev, 0);
+          printf("\t  to ");
+          ble_pkt_print(newer_pkt, 0);
+      }
+
+      newer_pkt = pkt;
+
+    }
+  }
+}
