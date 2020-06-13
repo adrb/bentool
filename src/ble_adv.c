@@ -285,23 +285,25 @@ int badv_track_devices() {
 
       // Next packet before our device last packet?
       if ( next_pkt->recv_time.tv_sec < last_pkt->recv_time.tv_sec ) {
-        break;
+        continue;
       }
 
       // Long gap?
       if ( (next_pkt->recv_time.tv_sec - last_pkt->recv_time.tv_sec) > 20 ) {
-        break;
+        continue;
       }
 
       // RSSI more or less the same?
       if ( abs(next_pkt->rssi - last_pkt->rssi) > 20 ) {
-        break;
+        continue;
       }
 
       printf("Device changed notifications\n\tfrom ");
       ble_pkt_print(last_pkt, 0);
       printf("\t  to ");
       ble_pkt_print(next_pkt, 0);
+
+      break;
     }
   }
 
