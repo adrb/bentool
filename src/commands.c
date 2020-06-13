@@ -130,6 +130,13 @@ int cmd_scan( int argc, char **argv) {
 return ble_scan(&btdev);
 }
 
+int cmd_track( int argc, char **argv) {
+
+  CHECK_ARGS_NUM(0);
+
+return badv_track_devices();
+}
+
 int cmd_ga_rpi( int argc, char **argv) {
 
   int len, i;
@@ -200,10 +207,14 @@ command_t commands[] = {
     "[AEM]\n\n\tDisplay or set advertised G+A AEM\n"
   },
   { cmd_scan, "scan",
-    "\n\n\tScan for exposure notification beacons\n"
+    "\n\n\tScan for exposure notification beacons (Ctrl-C to stop)\n"
   },
   { cmd_beacon, "beacon",
-    "\n\n\tAdvertise exposure notification beacons\n"
+    "\n\n\tAdvertise exposure notification beacons (Ctrl-C to stop)\n"
+  },
+  { cmd_track, "track",
+    "\n\n\tAnalyze scanned advertisements and try to track devices\n" \
+    "\tExecute 'scan' first\n"
   },
   { cmd_lerandaddr, "lerandaddr",
     "[BDADDR]\n\n\tDisplay or set BLE Random Address\n"

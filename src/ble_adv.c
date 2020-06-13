@@ -10,6 +10,53 @@
 uint32_t ble_pkts_size = 0;
 ble_pkt_t **ble_pkts = NULL;
 
+void en_ga_print( en_ga_t *en ) {
+
+  if ( !en ) return;
+
+  printf("RPI: ");
+  printhex((unsigned char*)&en->rpi, 16);
+  printf(", AEM: ");
+  printhex((unsigned char*)&en->aem, 4);
+
+}
+
+void ble_pkt_print( ble_pkt_t *pkt, int print_datadump ) {
+
+  if ( !pkt ) return;
+
+  // Temporary skip other packets that we aren't interesed with
+  if ( pkt->data_type == BLE_ADV_INFO ) return;
+
+  print_tv( &pkt->recv_time );
+
+  char addr[18];
+  ba2str(&(pkt->ba), addr);
+
+  printf(" - BD %s, RSSI %d, ", addr, pkt->rssi );
+
+  switch (pkt->data_type) {
+    case BLE_ADV_INFO:
+      printf("(not EN)");
+
+      if ( print_datadump ) {
+        printf("\n");
+        hexdump(pkt->data.advinfo->data, pkt->data.advinfo->length);
+      }
+    break;
+    case BLE_GA_EN:
+      en_ga_print(pkt->data.ga);
+
+      if ( print_datadump ) {
+        printf("\n");
+        hexdump((uint8_t*)pkt->data.ga, sizeof(en_ga_t) );
+      }
+    break;
+  }
+
+  printf("\n");
+}
+
 void ble_pkt_free( ble_pkt_t *pkt ) {
 
   switch (pkt->data_type) {
@@ -136,8 +183,9 @@ int badv_add( le_advertising_info *info, int print_pkt ) {
 //  printf("Slot set to : %ld\n", slot);
 
   ble_pkt_t *new_pkt = blescan_info2pkt(info);
-  if ( print_pkt )
+  if ( print_pkt ) {
     ble_pkt_print(new_pkt, 0);
+  }
 
   // add packet to selected chain
   if ( slot != -1 ) {
@@ -174,54 +222,89 @@ int badv_add( le_advertising_info *info, int print_pkt ) {
 return 0;
 }
 
-void badv_squash() {
+int badv_track_devices() {
 
-}
+  ble_pkt_t *pkt, *last_pkt, *next_pkt;
 
-void en_ga_print( en_ga_t *en ) {
-
-  if ( !en ) return;
-
-  printf("RPI: ");
-  printhex((unsigned char*)&en->rpi, 16);
-  printf(", AEM: ");
-  printhex((unsigned char*)&en->aem, 4);
-
-}
-
-void ble_pkt_print( ble_pkt_t *pkt, int print_datadump ) {
-
-  if ( !pkt ) return;
-
-  // Temporary skip other packets that we aren't interesed with
-  if ( pkt->data_type == BLE_ADV_INFO ) return;
-
-  print_tv( &pkt->recv_time );
-
-  char addr[18];
-  ba2str(&(pkt->ba), addr);
-
-  printf(" - BD %s, RSSI %d, ", addr, pkt->rssi );
-
-  switch (pkt->data_type) {
-    case BLE_ADV_INFO:
-      printf("(not EN)");
-
-      if ( print_datadump ) {
-        printf("\n");
-        hexdump(pkt->data.advinfo->data, pkt->data.advinfo->length);
-      }
-    break;
-    case BLE_GA_EN:
-      en_ga_print(pkt->data.ga);
-
-      if ( print_datadump ) {
-        printf("\n");
-        hexdump((uint8_t*)pkt->data.ga, sizeof(en_ga_t) );
-      }
-    break;
+  if ( !ble_pkts ) {
+    fprintf(stderr, "No data to track\n");
+    return -1;
   }
 
-  printf("\n");
+/*
+  printf("Captured devices:\n");
+  for ( uint32_t i = 0 ; i < ble_pkts_size ; i++ ) {
+    ble_pkt_print(ble_pkts[i], 0);
+  }
+*/
+
+  for ( uint32_t i = 0 ; i < ble_pkts_size ; i++ ) {
+
+    // Search for last GA packet in chain
+    for ( pkt = ble_pkts[i] ; pkt && pkt->data_type != BLE_GA_EN ; pkt = pkt->ble_pkt_prev ) ;
+
+    if ( !pkt ) continue;
+
+    last_pkt = pkt;
+
+    // Search for changed data within current chain
+    while ( pkt && pkt->ble_pkt_prev ) {
+
+      // Skip other packets (we may analyze it in further versions)
+      if ( pkt->data_type != BLE_GA_EN )
+        continue;
+
+      // Same data?
+      if ( memcmp(pkt->data.ga->rpi, pkt->ble_pkt_prev->data.ga->rpi, 16) ||
+            memcmp(pkt->data.ga->aem, pkt->ble_pkt_prev->data.ga->aem, 4)) {
+
+        printf("Device has changed only EN data\n\tfrom ");
+        ble_pkt_print(pkt->ble_pkt_prev, 0);
+        printf("\t  to ");
+        ble_pkt_print(pkt, 0);
+      }
+
+      pkt = pkt->ble_pkt_prev;
+    }
+
+    // Try to gues to what data, device switched with new EN interval
+    // (match last packet with first packet belonging to next chain)
+    for ( uint32_t j = 0 ; j < ble_pkts_size ; j++ ) {
+
+      if ( i == j ) continue;
+
+      // Search for earliest GA packet in chain
+      next_pkt = NULL;
+      for ( pkt = ble_pkts[j] ; pkt ; pkt = pkt->ble_pkt_prev ) {
+        if ( pkt->data_type == BLE_GA_EN )
+          next_pkt = pkt;
+      }
+
+      // No GA packets in this chain
+      if ( !next_pkt ) continue;
+
+      // Next packet before our device last packet?
+      if ( next_pkt->recv_time.tv_sec < last_pkt->recv_time.tv_sec ) {
+        break;
+      }
+
+      // Long gap?
+      if ( (next_pkt->recv_time.tv_sec - last_pkt->recv_time.tv_sec) > 20 ) {
+        break;
+      }
+
+      // RSSI more or less the same?
+      if ( abs(next_pkt->rssi - last_pkt->rssi) > 20 ) {
+        break;
+      }
+
+      printf("Device changed notifications\n\tfrom ");
+      ble_pkt_print(last_pkt, 0);
+      printf("\t  to ");
+      ble_pkt_print(next_pkt, 0);
+    }
+  }
+
+return 0;
 }
 
