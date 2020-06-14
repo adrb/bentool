@@ -67,7 +67,7 @@ Scanning for EN data broadcasted by other devices (Ctrl-C to stop):
 # ./bentool
 > scan
 Scanning for Bluetooth Advertisement packets...
-2020-06-13 14:49:35.705 - BD 00:19:86:00:04:FD, RSSI -39, RPI: 12340000000000000000000000000000, AEM: 12345678
+2020-06-13 14:49:35.705 - BD 01:02:03:04:05:06, RSSI -39, RPI: 12340000000000000000000000000000, AEM: 12345678
 ^C> track
 ```
 
