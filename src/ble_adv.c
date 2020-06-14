@@ -301,7 +301,7 @@ void badv_print() {
       if ( pkt->data_type != BLE_GA_EN ) continue;
 
       if ( !newer_pkt ) {
-        // Saver newer packet for further comparison
+        // Save newer packet for further comparison
         newer_pkt = pkt;
         continue;
       }

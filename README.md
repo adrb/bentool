@@ -4,7 +4,8 @@ Bluetooth Exposure Notification beacons manipulation tool for Linux.
 ## What is it?
 
 Tool which demonstrates practical replay attack against new Bluetooth based
-contact tracing G+A protocol.
+contact tracing G+A protocol. It can also track notification changes as long
+tracked device (smartfone) remains at receiver's range all the time.
 
 If you never heard of that before, please read about it [here](https://github.com/DP-3T/documents/blob/master/DP3T%20-%20Simplified%20Three%20Page%20Brief.pdf) and [here](https://www.apple.com/covid19/contacttracing/).
 
@@ -37,7 +38,8 @@ $ make
 ## Usage:
 
 Please keep in mind that it's work in progress, so expect seurious changes
-with every commit. The best you can do is run the program and type "help":
+with every commit. The best you can do is run the program and type "help"
+and hit enter key:
 
 ```
 # ./bentool
