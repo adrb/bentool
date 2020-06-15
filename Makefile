@@ -1,9 +1,9 @@
-# 
+#
 # master makefile
 # ---------------
 #
 # Copyright (C) 2020 by Adrian Brzezinski <adrian.brzezinski at adrb.pl>
-#  
+#
 
 OUT_NAME=bentool
 

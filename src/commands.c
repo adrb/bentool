@@ -55,7 +55,7 @@ int cmd_help( int argc, char **argv) {
       printf("%s\t\t", commands[i].name);
 
       col++;
-      if ( !(col % 5) ) printf("\n");
+      if ( !(col % 1) ) printf("\n");
     }
   }
 
@@ -130,9 +130,27 @@ int cmd_scan( int argc, char **argv) {
 return ble_scan(&btdev);
 }
 
+struct option cmd_track_opt[] = {
+  { "dump", 1, 0, 'd' },
+  { 0, 0, 0, 0 }
+};
+
 int cmd_track( int argc, char **argv) {
 
-  CHECK_ARGS_NUM(0);
+  int opt;
+
+  CHECK_ARGS_MAXNUM(2);
+
+  while ((opt=getopt_long(argc, argv, "+", cmd_track_opt, NULL)) != -1) {
+    switch (opt) {
+    case 'd':
+      return badv_dump_csv(optarg);
+    break;
+    default:
+      fprintf(stderr, "help: Unknown option\n");
+      return -1;
+    }
+  }
 
   // Loop until we merge all possible devices
   while ( badv_track_devices() > 0 ) ;
@@ -205,35 +223,57 @@ return 0;
 }
 
 command_t commands[] = {
-  { cmd_ga_rpi, "ga_rpi",
-    "[RPI]\n\n\tDisplay or set advertised G+A RPI\n"
+  {
+    .cmd = cmd_ga_rpi,
+    .name = "ga_rpi",
+    .desc = "[RPI]\n\n"
+      "\tDisplay or set advertised G+A RPI\n",
   },
-  { cmd_ga_aem, "ga_aem",
-    "[AEM]\n\n\tDisplay or set advertised G+A AEM\n"
+  {
+    .cmd = cmd_ga_aem,
+    .name = "ga_aem",
+    .desc = "[AEM]\n\n"
+      "\tDisplay or set advertised G+A AEM\n",
   },
-  { cmd_scan, "scan",
-    "\n\n\tScan for exposure notification beacons (Ctrl-C to stop)\n"
+  {
+    .cmd = cmd_scan,
+    .name = "scan",
+    .desc = "\n\n"
+      "\tScan for exposure notification beacons (Ctrl-C to stop)\n",
   },
-  { cmd_beacon, "beacon",
-    "\n\n\tAdvertise exposure notification beacons (Ctrl-C to stop)\n"
+  {
+    .cmd = cmd_beacon,
+    .name = "beacon",
+    .desc = "\n\n"
+      "\tAdvertise exposure notification beacons (Ctrl-C to stop)\n",
   },
-  { cmd_track, "track",
-    "\n\n\tAnalyze scanned advertisements and try to track devices\n" \
-    "\tExecute 'scan' first\n"
+  {
+    .cmd = cmd_track,
+    .name = "track",
+    .desc = "[--dump CSVFILE]\n\n"
+      "\tAnalyze scanned advertisements and try to track devices\n"
+      "\tExecute 'scan' first\n\n"
+      "\tCSVFILE - Dump scan results to CSV file\n",
+    },
+  {
+    .cmd = cmd_lerandaddr,
+    .name = "lerandaddr",
+    .desc = "[BDADDR]\n\n"
+      "\tDisplay or set BLE Random Address\n",
   },
-  { cmd_lerandaddr, "lerandaddr",
-    "[BDADDR]\n\n\tDisplay or set BLE Random Address\n"
+  {
+    .cmd = cmd_dev,
+    .name = "dev",
+    .desc = "[hciX]\n\n"
+    "\tList bluetooth devices or select HCI device\n"
+    "\tIf device is not specified, further commands will\n"
+    "\tbe sent to the first available Bluetooth device\n",
   },
-  { cmd_dev, "dev",
-    "[hciX]\n\n" \
-    "\tList bluetooth devices or select HCI device\n" \
-    "\tIf device is not specified, further commands will\n" \
-    "\tbe sent to the first available Bluetooth device\n"
-  },
-  { cmd_help, "help",
-    "[COMMAND]\n\n" \
-    "\tList available commands\n\n" \
-    "\tCOMMAND\tprint detailed description about COMMAND\n"
+  { .cmd = cmd_help,
+    .name = "help",
+    .desc = "[COMMAND]\n\n"
+    "\tList available commands\n\n"
+    "\tCOMMAND\tprint detailed description about COMMAND\n",
   },
   { cmd_help, "?", "Synonym for 'help'" },
   { cmd_quit, "quit", "Exit the program" },

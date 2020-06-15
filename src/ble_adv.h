@@ -59,6 +59,7 @@ int badv_track_devices();
 void en_ga_print( en_ga_t *en );
 void ble_pkt_print( ble_pkt_t *pkt, int print_datadump );
 void badv_print();
+int badv_dump_csv(char *filename);
 
 #endif // __BLE_ADV_H__
 

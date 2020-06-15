@@ -25,15 +25,12 @@ void ble_pkt_print( ble_pkt_t *pkt, int print_datadump ) {
 
   if ( !pkt ) return;
 
-  // Temporary skip other packets that we aren't interesed with
-  if ( pkt->data_type == BLE_ADV_INFO ) return;
-
   print_tv( &pkt->recv_time );
 
   char addr[18];
   ba2str(&(pkt->ba), addr);
 
-  printf(" - BD %s, RSSI %d, ", addr, pkt->rssi );
+  printf(", BD: %s, RSSI: %d, ", addr, pkt->rssi );
 
   switch (pkt->data_type) {
     case BLE_ADV_INFO:
@@ -53,8 +50,69 @@ void ble_pkt_print( ble_pkt_t *pkt, int print_datadump ) {
       }
     break;
   }
+}
 
-  printf("\n");
+int badv_dump_csv(char *filename) {
+
+  ble_pkt_t *pkt;
+
+  if ( !filename ) return -1;
+
+  FILE *f = fopen(filename, "w");
+
+  fprintf(f,"sec, usec, bdaddr, rssi, ga_rpi, ga_aem, pkt_data\n");
+
+  for ( uint32_t i = 0 ; i < ble_pkts_size ; i++ ) {
+    for ( pkt = ble_pkts[i] ; pkt ; pkt = pkt->ble_pkt_prev ) {
+
+      char addr[18];
+      ba2str(&(pkt->ba), addr);
+
+      fprintf(f, "%ld,%ld,%s,%d,",
+        pkt->recv_time.tv_sec, pkt->recv_time.tv_usec,
+        addr, pkt->rssi);
+
+      switch (pkt->data_type) {
+
+      case BLE_ADV_INFO:
+
+        fprintf(f, ",,");
+
+        for ( int d = 0 ; d < pkt->data.advinfo->length ; d++ )
+          fprintf(f, "%02x", pkt->data.advinfo->data[d]);
+
+      break;
+      case BLE_GA_EN:
+
+        ;
+
+        en_ga_t *ga_info = pkt->data.ga;
+
+        for ( int d = 0 ; d < 16 ; d++ )
+          fprintf(f, "%02x", ga_info->rpi[d] );
+
+        fprintf(f, ",");
+
+        for ( int d = 0 ; d < sizeof(en_ga_t) ; d++ )
+          fprintf(f, "%02x", ga_info->aem[d]);
+
+        fprintf(f, ",");
+
+        for ( int d = 0 ; d < sizeof(en_ga_t) ; d++ )
+          fprintf(f, "%02x", ((uint8_t*)ga_info)[d]);
+
+      break;
+
+      }
+
+      fprintf(f,"\n");
+    }
+  }
+
+  fflush(f);
+  fclose(f);
+
+return 0;
 }
 
 void ble_pkt_free( ble_pkt_t *pkt ) {
@@ -183,10 +241,9 @@ int badv_add( le_advertising_info *info, int print_pkts ) {
 //  printf("Slot set to : %ld\n", slot);
 
   ble_pkt_t *new_pkt = blescan_info2pkt(info);
-  if ( print_pkts ) {
+  if ( print_pkts && new_pkt->data_type == BLE_GA_EN ) {
     ble_pkt_print(new_pkt, 0);
-  } else {
-    print_busyloop();
+    printf("\n");
   }
 
   // add packet to selected chain
@@ -326,13 +383,15 @@ void badv_print() {
           (tail_pkt->recv_time.tv_sec + (tail_pkt->recv_time.tv_usec - head_pkt->recv_time.tv_usec)/1000000.0 - head_pkt->recv_time.tv_sec));
         printf("\thead ");
         ble_pkt_print(head_pkt, 0);
-        printf("\ttail ");
+        printf("\n\ttail ");
         ble_pkt_print(tail_pkt, 0);
+        printf("\n");
 
         // We are already at start of whole stream
         if ( pkt->ble_pkt_prev ) {
           printf("\ttail of previous stream\n\t     ");
           ble_pkt_print(pkt, 0);
+          printf("\n");
         }
 
         tail_pkt = pkt; // Mark changed data tail
@@ -343,3 +402,4 @@ void badv_print() {
     }
   }
 }
+

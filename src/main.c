@@ -197,7 +197,7 @@ int main(int argc, char *argv[]) {
   read_history(HISTORY_FILE);
 
   while ( 1 ) {
- 
+
     if ( !(line = readline("> ")) ) {
 
       char *quit_args[2] = {"quit", "" };

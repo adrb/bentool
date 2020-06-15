@@ -71,6 +71,12 @@ Scanning for Bluetooth Advertisement packets...
 ^C> track
 ```
 
+Exporting scan result to CSV file :
+
+```
+> track --dump /tmp/bentool.csv
+```
+
 Commands history is saved to .bthistory file if it exists.
 
 ## Author:

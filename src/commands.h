@@ -11,9 +11,9 @@
 typedef int (tf_command) ( int, char** );
 
 typedef struct {
-  tf_command *cmd;      // Function to call to do the job
-  char *name;           // User printable name of the function
-  char *desc;           // Short description for this function
+  tf_command *cmd;          // Function to call to do the job
+  char *name;               // User printable name of the function
+  char *desc;               // Short description for this function
 } command_t;
 
 int cmd_quit( int argc, char **argv);   // exported for main()
