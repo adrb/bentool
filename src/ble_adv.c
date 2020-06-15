@@ -224,6 +224,7 @@ int badv_add( le_advertising_info *info, int print_pkts ) {
 return 0;
 }
 
+// Keep in mind that it process data in reverse order (from newest packet to oldest)
 int badv_track_devices() {
 
   ble_pkt_t *pkt, *last_pkt, *next_pkt;
@@ -289,6 +290,7 @@ int badv_track_devices() {
 return merges;
 }
 
+// Keep in mind that it process data in reverse order (from newest packet to oldest)
 void badv_print() {
 
   ble_pkt_t *tail_pkt, *head_pkt, *pkt;
@@ -310,15 +312,30 @@ void badv_print() {
       // Compare head with previously caught packet
       if ( memcmp(pkt->data.ga->rpi, head_pkt->data.ga->rpi, 16) ||
               memcmp(pkt->data.ga->aem, head_pkt->data.ga->aem, 4) ||
-              bacmp(&pkt->ba, &head_pkt->ba)
+              bacmp(&pkt->ba, &head_pkt->ba) ||
+              !pkt->ble_pkt_prev // we are at begining of whole device stream
          ) {
 
-        printf("Device %d has changed EN data\n\tfrom ", i);
-        ble_pkt_print(pkt, 0);
-        printf("\t  to ");
-        ble_pkt_print(head_pkt, 0);
-        printf("\t     advertising time %.3lfs\n",
+        if ( !pkt->ble_pkt_prev ) {
+          // Move head to first packet in the stream
+          head_pkt = pkt;
+        }
+
+        printf("Device %d - advertisment stream detected:\n", i);
+        printf("\tstarted at ");
+        print_tv(&head_pkt->recv_time);
+        printf(" for a period of %.3lf seconds\n",
           (tail_pkt->recv_time.tv_sec + (tail_pkt->recv_time.tv_usec - head_pkt->recv_time.tv_usec)/1000000.0 - head_pkt->recv_time.tv_sec));
+        printf("\thead ");
+        ble_pkt_print(head_pkt, 0);
+        printf("\ttail ");
+        ble_pkt_print(tail_pkt, 0);
+
+        // We are already at start of whole stream
+        if ( pkt->ble_pkt_prev ) {
+          printf("\ttail of previous stream\n\t     ");
+          ble_pkt_print(pkt, 0);
+        }
 
         tail_pkt = pkt; // Mark changed data tail
       }
