@@ -322,9 +322,7 @@ void badv_print() {
         }
 
         printf("Device %d - advertisment stream detected:\n", i);
-        printf("\tstarted at ");
-        print_tv(&head_pkt->recv_time);
-        printf(" for a period of %.3lf seconds\n",
+        printf("\tbroadcast period %.3lf seconds\n",
           (tail_pkt->recv_time.tv_sec + (tail_pkt->recv_time.tv_usec - head_pkt->recv_time.tv_usec)/1000000.0 - head_pkt->recv_time.tv_sec));
         printf("\thead ");
         ble_pkt_print(head_pkt, 0);
