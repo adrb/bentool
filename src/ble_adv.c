@@ -291,35 +291,40 @@ return merges;
 
 void badv_print() {
 
-  ble_pkt_t *newer_pkt, *pkt;
+  ble_pkt_t *tail_pkt, *head_pkt, *pkt;
 
   for ( uint32_t i = 0 ; i < ble_pkts_size ; i++ ) {
 
     // Print changes for chain
-    for ( pkt = ble_pkts[i], newer_pkt = NULL ; pkt ; pkt = pkt->ble_pkt_prev ) {
+    for ( pkt = ble_pkts[i], tail_pkt = NULL ; pkt ; pkt = pkt->ble_pkt_prev ) {
 
       if ( pkt->data_type != BLE_GA_EN ) continue;
 
-      if ( !newer_pkt ) {
-        // Save newer packet for further comparison
-        newer_pkt = pkt;
+      if ( !tail_pkt ) {
+        // Save lately received packet from notification stream for further comparison
+        tail_pkt = pkt;
+        head_pkt = pkt;
         continue;
       }
 
-      // Same data?
-      if ( memcmp(pkt->data.ga->rpi, newer_pkt->data.ga->rpi, 16) ||
-              memcmp(pkt->data.ga->aem, newer_pkt->data.ga->aem, 4) ||
-              bacmp(&pkt->ba, &newer_pkt->ba)
+      // Compare head with previously caught packet
+      if ( memcmp(pkt->data.ga->rpi, head_pkt->data.ga->rpi, 16) ||
+              memcmp(pkt->data.ga->aem, head_pkt->data.ga->aem, 4) ||
+              bacmp(&pkt->ba, &head_pkt->ba)
          ) {
 
-          printf("Device %d has changed EN data\n\tfrom ", i);
-          ble_pkt_print(pkt->ble_pkt_prev, 0);
-          printf("\t  to ");
-          ble_pkt_print(newer_pkt, 0);
+        printf("Device %d has changed EN data\n\tfrom ", i);
+        ble_pkt_print(pkt, 0);
+        printf("\t  to ");
+        ble_pkt_print(head_pkt, 0);
+        printf("\t     advertising time %.3lfs\n",
+          (tail_pkt->recv_time.tv_sec + (tail_pkt->recv_time.tv_usec - head_pkt->recv_time.tv_usec)/1000000.0 - head_pkt->recv_time.tv_sec));
+
+        tail_pkt = pkt; // Mark changed data tail
       }
 
-      newer_pkt = pkt;
-
+      // Move stream head
+      head_pkt = pkt;
     }
   }
 }
