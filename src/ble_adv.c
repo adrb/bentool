@@ -82,6 +82,7 @@ int badv_dump_csv(char *filename) {
           fprintf(f, "%02x", pkt->data.advinfo->data[d]);
 
       break;
+
       case BLE_GA_EN:
 
         ;
@@ -102,7 +103,6 @@ int badv_dump_csv(char *filename) {
           fprintf(f, "%02x", ((uint8_t*)ga_info)[d]);
 
       break;
-
       }
 
       fprintf(f,"\n");
@@ -351,6 +351,8 @@ return merges;
 void badv_print() {
 
   ble_pkt_t *tail_pkt, *head_pkt, *pkt;
+  double time_sum;
+  uint32_t pkts_num;
 
   for ( uint32_t i = 0 ; i < ble_pkts_size ; i++ ) {
 
@@ -363,6 +365,10 @@ void badv_print() {
         // Save lately received packet from notification stream for further comparison
         tail_pkt = pkt;
         head_pkt = pkt;
+
+        // average gap
+        time_sum = 0.0;
+        pkts_num = 1;
         continue;
       }
 
@@ -379,8 +385,9 @@ void badv_print() {
         }
 
         printf("Device %d - advertisment stream detected:\n", i);
-        printf("\tbroadcast period %.3lf seconds\n",
-          (tail_pkt->recv_time.tv_sec + (tail_pkt->recv_time.tv_usec - head_pkt->recv_time.tv_usec)/1000000.0 - head_pkt->recv_time.tv_sec));
+        printf("\tbroadcast period %.3lf seconds, average gap between packets %.3lf seconds\n",
+          (tail_pkt->recv_time.tv_sec + (tail_pkt->recv_time.tv_usec - head_pkt->recv_time.tv_usec)/1000000.0 - head_pkt->recv_time.tv_sec),
+          ( (double)time_sum / (double)pkts_num ));
         printf("\thead ");
         ble_pkt_print(head_pkt, 0);
         printf("\n\ttail ");
@@ -389,13 +396,17 @@ void badv_print() {
 
         // We are already at start of whole stream
         if ( pkt->ble_pkt_prev ) {
-          printf("\ttail of previous stream\n\t     ");
+          printf("\ttail of previous stream (gap %.3lf seconds)\n\t     ",
+            (head_pkt->recv_time.tv_sec + (head_pkt->recv_time.tv_usec - pkt->recv_time.tv_usec)/1000000.0 - pkt->recv_time.tv_sec));
           ble_pkt_print(pkt, 0);
           printf("\n");
         }
 
         tail_pkt = pkt; // Mark changed data tail
       }
+
+      time_sum += (head_pkt->recv_time.tv_sec + (head_pkt->recv_time.tv_usec - pkt->recv_time.tv_usec)/1000000.0 - pkt->recv_time.tv_sec);
+      pkts_num++;
 
       // Move stream head
       head_pkt = pkt;
