@@ -196,7 +196,7 @@ int badv_load_csv(char *filename) {
         ble_pkt_print(pkt, 0);
         printf("\n");
 
-        if ( (ret = badv_add(pkt)) < 0 )
+        if ( (ret = ble_pkt_add(pkt)) < 0 )
           goto badv_load_csv_exit;
 
         pkt = NULL;
@@ -325,7 +325,7 @@ ble_info2pkt_enomem:
   exit(ENOMEM);
 }
 
-int badv_add( ble_pkt_t *new_pkt ) {
+int ble_pkt_add( ble_pkt_t *new_pkt ) {
 
   int64_t slot = -1;
 

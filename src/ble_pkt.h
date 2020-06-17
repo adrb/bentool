@@ -52,8 +52,18 @@ typedef struct ble_pkt_s {
 
 } ble_pkt_t;
 
+typedef struct {
+
+  ble_pkt_t *head;
+  ble_pkt_t *tail;
+
+  uint32_t pkts;
+  uint64_t gap_sum;   // sum of time gaps between packets in stream
+
+} ble_pkt_stream_t;
+
 int badv_init();
-int badv_add( ble_pkt_t *new_pkt);
+int ble_pkt_add( ble_pkt_t *new_pkt);
 int badv_track_devices();
 
 ble_pkt_t* ble_info2pkt( le_advertising_info *info );

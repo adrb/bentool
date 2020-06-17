@@ -123,7 +123,7 @@ int ble_scan_events( int dd ) {
     while ( reports_num-- ) {
 
       ble_pkt_t *new_pkt = ble_info2pkt(info);
-      if ( !new_pkt || badv_add(new_pkt) < 0 ) {
+      if ( !new_pkt || ble_pkt_add(new_pkt) < 0 ) {
         abort_signal = 1;
         break;
       }
