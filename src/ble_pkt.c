@@ -61,7 +61,11 @@ int badv_dump_csv(char *filename) {
   FILE *f = fopen(filename, "w");
 
   for ( uint32_t i = 0 ; i < ble_pkts_size ; i++ ) {
-    for ( pkt = ble_pkts[i] ; pkt ; pkt = pkt->ble_pkt_prev ) {
+
+    // Dump in order of receiptment
+    for ( pkt = ble_pkts[i] ; pkt && pkt->older ; pkt = pkt->older ) ;
+
+    for ( ; pkt ; pkt = pkt->newer ) {
 
       print_busyloop();
 
@@ -256,7 +260,7 @@ int badv_init() {
       ble_pkt_t *pkt = ble_pkts[i];
 
       while ( pkt ) {
-        ble_pkt_t *ppkt = pkt->ble_pkt_prev;
+        ble_pkt_t *ppkt = pkt->older;
 
         ble_pkt_free(pkt);
         pkt = ppkt;
@@ -359,10 +363,13 @@ int ble_pkt_add( ble_pkt_t *new_pkt ) {
 
   // add packet to selected chain
   if ( slot != -1 ) {
-    ble_pkt_t *prev_pkt = ble_pkts[slot];
+    ble_pkt_t *old_pkt = ble_pkts[slot];
 
-    new_pkt->ble_pkt_prev = prev_pkt;
+    if ( old_pkt )
+      old_pkt->newer = new_pkt;
 
+    new_pkt->older = old_pkt;
+    new_pkt->newer = NULL;
     ble_pkts[slot] = new_pkt;
 
     return 0;
@@ -371,12 +378,12 @@ int ble_pkt_add( ble_pkt_t *new_pkt ) {
   // The for loop reached buffer end.
   // It means that buffer is full and we didn't see
   // that device address before
-  if ( (ble_pkts_size * 2) > BLE_PKTS_BUF_MAX ) {
+  if ( (ble_pkts_size + (ble_pkts_size/2)) > BLE_PKTS_BUF_MAX ) {
     fprintf(stderr, "Reached maximum packet buffer size\n");
     return -1;
   }
 
-  ble_pkt_t **ble_pkts_new = (ble_pkt_t **) realloc(ble_pkts, ble_pkts_size * 2 * sizeof(ble_pkt_t*));
+  ble_pkt_t **ble_pkts_new = (ble_pkt_t **) realloc(ble_pkts, (ble_pkts_size+(ble_pkts_size/2)) * sizeof(ble_pkt_t*));
   if ( ble_pkts_new == NULL ) {
     perror("Error while enlarging packet buffer");
     exit(ENOMEM);
@@ -387,7 +394,7 @@ int ble_pkt_add( ble_pkt_t *new_pkt ) {
   memset(ble_pkts+ble_pkts_size, 0, sizeof(ble_pkt_t*) * ble_pkts_size);
 
   ble_pkts[ble_pkts_size] = new_pkt;
-  ble_pkts_size *= 2;
+  ble_pkts_size += (ble_pkts_size/2);
 
 return 0;
 }
@@ -406,7 +413,7 @@ int badv_track_devices() {
   for ( uint32_t i = 0 ; i < ble_pkts_size ; i++ ) {
 
     // Search for last GA packet in chain
-    for ( pkt = ble_pkts[i] ; pkt && pkt->data_type != BLE_GA_EN ; pkt = pkt->ble_pkt_prev ) ;
+    for ( pkt = ble_pkts[i] ; pkt && pkt->data_type != BLE_GA_EN ; pkt = pkt->older ) ;
 
     if ( !pkt ) continue;
 
@@ -420,7 +427,7 @@ int badv_track_devices() {
 
       // Search for earliest GA packet in chain
       next_pkt = NULL;
-      for ( pkt = ble_pkts[j] ; pkt ; pkt = pkt->ble_pkt_prev ) {
+      for ( pkt = ble_pkts[j] ; pkt ; pkt = pkt->older ) {
         if ( pkt->data_type == BLE_GA_EN )
           next_pkt = pkt;
       }
@@ -444,9 +451,11 @@ int badv_track_devices() {
       }
 
       // If it's the same device, merge old chain to newer chain
-      for ( pkt = ble_pkts[j] ; pkt && pkt->ble_pkt_prev ; pkt = pkt->ble_pkt_prev ) ; // go to first packet in chain
+      for ( pkt = ble_pkts[j] ; pkt && pkt->older ; pkt = pkt->older ) ; // go to first packet in chain
 
-      pkt->ble_pkt_prev = ble_pkts[i];
+      pkt->older = ble_pkts[i];
+      pkt->older->newer = pkt;
+
       ble_pkts[i] = NULL;
 
       merges++;
@@ -468,7 +477,7 @@ void badv_print() {
   for ( uint32_t i = 0 ; i < ble_pkts_size ; i++ ) {
 
     // Print changes for chain
-    for ( pkt = ble_pkts[i], tail_pkt = NULL ; pkt ; pkt = pkt->ble_pkt_prev ) {
+    for ( pkt = ble_pkts[i], tail_pkt = NULL ; pkt ; pkt = pkt->older ) {
 
       if ( pkt->data_type != BLE_GA_EN ) continue;
 
@@ -487,10 +496,10 @@ void badv_print() {
       if ( memcmp(pkt->data.ga->rpi, head_pkt->data.ga->rpi, 16) ||
               memcmp(pkt->data.ga->aem, head_pkt->data.ga->aem, 4) ||
               bacmp(&pkt->ba, &head_pkt->ba) ||
-              !pkt->ble_pkt_prev // we are at begining of whole device stream
+              !pkt->older // we are at begining of whole device stream
          ) {
 
-        if ( !pkt->ble_pkt_prev ) {
+        if ( !pkt->older ) {
           // Move head to first packet in the stream
           head_pkt = pkt;
         }
@@ -506,7 +515,7 @@ void badv_print() {
         printf("\n");
 
         // We are already at start of whole stream
-        if ( pkt->ble_pkt_prev ) {
+        if ( pkt->older ) {
           printf("\ttail of previous stream (gap %.3lf seconds)\n\t     ",
             (head_pkt->recv_time.tv_sec + (head_pkt->recv_time.tv_usec - pkt->recv_time.tv_usec)/1000000.0 - pkt->recv_time.tv_sec));
           ble_pkt_print(pkt, 0);

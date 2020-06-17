@@ -35,7 +35,8 @@ typedef enum {
 
 typedef struct ble_pkt_s {
 
-  struct ble_pkt_s *ble_pkt_prev;  // previous packet from the same sender
+  struct ble_pkt_s *older;  // packet received before that packet
+  struct ble_pkt_s *newer;  // packet received after that packet
 
   uint8_t bdaddr_type;
   bdaddr_t ba;
