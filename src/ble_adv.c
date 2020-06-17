@@ -132,7 +132,7 @@ int badv_load_csv(char *filename) {
 
     for ( col = 0, tok = strtok(buf, ",") ; tok && *tok ; tok = strtok(NULL, ",\n"), col++ ) {
 
-      printf("%i: %s\n", col, tok);
+//      printf("%i: %s\n", col, tok);
 
       // alocate new pkt on column 0
       if ( !pkt && (pkt = calloc(1, sizeof(ble_pkt_t) )) == NULL ) {
