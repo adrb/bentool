@@ -130,26 +130,24 @@ int cmd_scan( int argc, char **argv) {
 return ble_scan(&btdev);
 }
 
-struct option cmd_track_opt[] = {
-  { "dump", 1, 0, 'd' },
-  { 0, 0, 0, 0 }
-};
-
 int cmd_track( int argc, char **argv) {
 
   int opt;
 
   CHECK_ARGS_MAXNUM(2);
 
-  while ((opt=getopt_long(argc, argv, "+", cmd_track_opt, NULL)) != -1) {
-    switch (opt) {
-    case 'd':
-      return badv_dump_csv(optarg);
-    break;
-    default:
-      fprintf(stderr, "help: Unknown option\n");
-      return -1;
+  if ( argc > 1 ) {
+
+    if ( !strcmp(argv[1], "--load" ) ) {
+      return badv_load_csv(argv[2]);
     }
+
+    if ( !strcmp(argv[1], "--dump" ) ) {
+      return badv_dump_csv(argv[2]);
+    }
+
+    fprintf(stderr, "help: Unknown option\n");
+    return -1;
   }
 
   // Loop until we merge all possible devices
@@ -250,10 +248,10 @@ command_t commands[] = {
   {
     .cmd = cmd_track,
     .name = "track",
-    .desc = "[--dump CSVFILE]\n\n"
+    .desc = "[--dump|--load CSVFILE]\n\n"
       "\tAnalyze scanned advertisements and try to track devices\n"
       "\tExecute 'scan' first\n\n"
-      "\tCSVFILE - Dump scan results to CSV file\n",
+      "\tCSVFILE - Dump or load scan results to/from CSV file\n",
     },
   {
     .cmd = cmd_lerandaddr,

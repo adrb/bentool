@@ -60,10 +60,10 @@ int badv_dump_csv(char *filename) {
 
   FILE *f = fopen(filename, "w");
 
-  fprintf(f,"sec, usec, bdaddr, rssi, ga_rpi, ga_aem, pkt_data\n");
-
   for ( uint32_t i = 0 ; i < ble_pkts_size ; i++ ) {
     for ( pkt = ble_pkts[i] ; pkt ; pkt = pkt->ble_pkt_prev ) {
+
+      print_busyloop();
 
       char addr[18];
       ba2str(&(pkt->ba), addr);
@@ -76,7 +76,8 @@ int badv_dump_csv(char *filename) {
 
       case BLE_ADV_INFO:
 
-        fprintf(f, ",,");
+        for ( int d = 0 ; d < sizeof(le_advertising_info) ; d++ )
+          fprintf(f, "%02x", ((uint8_t*)pkt->data.advinfo)[d]);
 
         for ( int d = 0 ; d < pkt->data.advinfo->length ; d++ )
           fprintf(f, "%02x", pkt->data.advinfo->data[d]);
@@ -88,16 +89,6 @@ int badv_dump_csv(char *filename) {
         ;
 
         en_ga_t *ga_info = pkt->data.ga;
-
-        for ( int d = 0 ; d < 16 ; d++ )
-          fprintf(f, "%02x", ga_info->rpi[d] );
-
-        fprintf(f, ",");
-
-        for ( int d = 0 ; d < sizeof(en_ga_t) ; d++ )
-          fprintf(f, "%02x", ga_info->aem[d]);
-
-        fprintf(f, ",");
 
         for ( int d = 0 ; d < sizeof(en_ga_t) ; d++ )
           fprintf(f, "%02x", ((uint8_t*)ga_info)[d]);
@@ -112,7 +103,133 @@ int badv_dump_csv(char *filename) {
   fflush(f);
   fclose(f);
 
+  // clear busy loop char
+  printf("\b");
+  fflush(stdout);
+
 return 0;
+}
+
+int badv_load_csv(char *filename) {
+
+  FILE *f;
+  ble_pkt_t *pkt = NULL;
+  char buf[4096];
+  char *tok;
+  unsigned int val;
+  int ret = 0, col;
+
+  if ( !filename || badv_init() < 0 ) return -1;
+
+  if ( !(f = fopen(filename, "r")) ) {
+    perror("Coudn't load file");
+    return -1;
+  }
+
+  while ( fgets(buf, sizeof(buf), f)  ) {
+
+//    print_busyloop();
+
+    for ( col = 0, tok = strtok(buf, ",") ; tok && *tok ; tok = strtok(NULL, ",\n"), col++ ) {
+
+      printf("%i: %s\n", col, tok);
+
+      // alocate new pkt on column 0
+      if ( !pkt && (pkt = calloc(1, sizeof(ble_pkt_t) )) == NULL ) {
+        goto badv_load_csv_enomem;
+      }
+
+      switch ( col % 5 ) {
+      case 0:
+        pkt->recv_time.tv_sec = atol(tok);
+      break;
+      case 1:
+        pkt->recv_time.tv_usec = atol(tok);
+      break;
+      case 2:
+        str2ba(tok, &pkt->ba);
+      break;
+      case 3:
+         pkt->rssi = atoi(tok);
+      break;
+      case 4:
+        if ( strncmp(tok, "17166ffd", 8) ) {
+          pkt->data_type = BLE_ADV_INFO;
+
+          le_advertising_info *info_tok = (le_advertising_info*)tok;
+
+          if ( (pkt->data.advinfo = (le_advertising_info*) malloc(sizeof(le_advertising_info)+info_tok->length)) == NULL ) {
+            goto badv_load_csv_enomem;
+          }
+
+          for ( int i = 0; i < sizeof(le_advertising_info) << 1 && tok[i] ; i += 2 ) {
+            val = 0;
+            sscanf(tok+i, "%02x", &val);
+
+            ((uint8_t*)pkt->data.advinfo)[i >> 1] = val & 0xff;
+          }
+
+          for ( int i = 0; i < pkt->data.advinfo->length << 1 && tok[i] ; i += 2 ) {
+            val = 0;
+            sscanf(tok+i, "%02x", &val);
+
+            pkt->data.advinfo->data[i >> 1] = val & 0xff;
+          }
+
+        } else {
+          pkt->data_type = BLE_GA_EN;
+
+          if ( (pkt->data.ga = (en_ga_t*) malloc(sizeof(en_ga_t))) == NULL ) {
+            goto badv_load_csv_enomem;
+          }
+
+          for ( int i = 0; i < sizeof(en_ga_t) << 1 && tok[i] ; i += 2 ) {
+            val = 0;
+            sscanf(tok+i, "%02x", &val);
+
+            ((uint8_t*)pkt->data.ga)[i >> 1] = val & 0xff;
+          }
+
+        }
+
+        // Last column, push pkt to stream
+        ble_pkt_print(pkt, 0);
+        printf("\n");
+
+        if ( (ret = badv_add(pkt)) < 0 )
+          goto badv_load_csv_exit;
+
+        pkt = NULL;
+
+      break;
+
+      default:
+        fprintf(stderr, "Unknown line format!");
+        ret = -1;
+        goto badv_load_csv_exit;
+      }
+
+    }
+  }
+
+badv_load_csv_exit:
+
+  // clear busy loop char
+//  printf("\b");
+//  fflush(stdout);
+
+  fclose(f);
+
+return ret;
+
+badv_load_csv_enomem:
+
+  fclose(f);
+
+  perror("Could not allocate packet");
+  exit(ENOMEM);
+
+return -1;
 }
 
 void ble_pkt_free( ble_pkt_t *pkt ) {
@@ -160,12 +277,12 @@ int badv_init() {
 return 0;
 }
 
-ble_pkt_t* blescan_info2pkt( le_advertising_info *info ) {
+ble_pkt_t* ble_info2pkt( le_advertising_info *info ) {
 
   ble_pkt_t *pkt = NULL;
 
   if ( (pkt = calloc(1, sizeof(ble_pkt_t) )) == NULL ) {
-    goto blescan_info2pkt_enomem;
+    goto ble_info2pkt_enomem;
   }
 
   gettimeofday(&pkt->recv_time, NULL);
@@ -175,7 +292,7 @@ ble_pkt_t* blescan_info2pkt( le_advertising_info *info ) {
     pkt->data_type = BLE_ADV_INFO;
 
     if ( (pkt->data.advinfo = (le_advertising_info*) malloc(sizeof(le_advertising_info) + info->length)) == NULL ) {
-      goto blescan_info2pkt_enomem;
+      goto ble_info2pkt_enomem;
     }
 
     memcpy(pkt->data.advinfo, info, sizeof(le_advertising_info) );
@@ -185,7 +302,7 @@ ble_pkt_t* blescan_info2pkt( le_advertising_info *info ) {
     pkt->data_type = BLE_GA_EN;
 
     if ( (pkt->data.ga = (en_ga_t*) malloc(sizeof(en_ga_t))) == NULL ) {
-      goto blescan_info2pkt_enomem;
+      goto ble_info2pkt_enomem;
     }
 
     en_ga_t *ga_info = (en_ga_t *) (info->data + 4);
@@ -202,17 +319,17 @@ ble_pkt_t* blescan_info2pkt( le_advertising_info *info ) {
 
 return pkt;
 
-blescan_info2pkt_enomem:
+ble_info2pkt_enomem:
 
   perror("Could not allocate packet");
   exit(ENOMEM);
 }
 
-int badv_add( le_advertising_info *info, int print_pkts ) {
+int badv_add( ble_pkt_t *new_pkt ) {
 
   int64_t slot = -1;
 
-  if ( !ble_pkts || !info ) {
+  if ( !ble_pkts || !new_pkt ) {
     return -1;
   }
 
@@ -229,7 +346,7 @@ int badv_add( le_advertising_info *info, int print_pkts ) {
       continue;
     }
 
-    if ( !bacmp(&pkt->ba, &info->bdaddr) ) {
+    if ( !bacmp(&pkt->ba, &new_pkt->ba) ) {
 
       // We have found same device
       slot = i;
@@ -239,12 +356,6 @@ int badv_add( le_advertising_info *info, int print_pkts ) {
   }
 
 //  printf("Slot set to : %ld\n", slot);
-
-  ble_pkt_t *new_pkt = blescan_info2pkt(info);
-  if ( print_pkts && new_pkt->data_type == BLE_GA_EN ) {
-    ble_pkt_print(new_pkt, 0);
-    printf("\n");
-  }
 
   // add packet to selected chain
   if ( slot != -1 ) {

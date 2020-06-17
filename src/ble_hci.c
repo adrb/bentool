@@ -122,8 +122,16 @@ int ble_scan_events( int dd ) {
     le_advertising_info *info = (le_advertising_info *) (meta->data + 1);
     while ( reports_num-- ) {
 
-      if ( badv_add(info, 1) < 0 )
+      ble_pkt_t *new_pkt = ble_info2pkt(info);
+      if ( !new_pkt || badv_add(new_pkt) < 0 ) {
         abort_signal = 1;
+        break;
+      }
+
+      if ( new_pkt->data_type == BLE_GA_EN ) {
+        ble_pkt_print(new_pkt, 0);
+        printf("\n");
+      }
 
       info = (le_advertising_info *) (info->data + info->length + 1);
     }
@@ -264,8 +272,8 @@ int ble_beacon_ga( btdev_t *btdev ) {
   le_set_advertising_parameters_cp adv_params;
   memset(&adv_params, 0, sizeof(adv_params));
   adv_params.min_interval = htobs(0x0140);  // 1 = 0.625ms (16 = 10ms), see BLE HCI spec
-  adv_params.max_interval = htobs(0x0c80);  // 2000ms, BT Core 5.1 defines upper limit to 10.24sec (0x4000)
-  adv_params.advtype = 3;   // 0 - Connectable undirected advertising, 3 - Non connectable undirected advertising
+  adv_params.max_interval = htobs(0x0280);  // 400ms, BT Core 5.1 defines upper limit to 10.24sec (0x4000)
+  adv_params.advtype = 2;   // 0 - Connectable undirected advertising, 2 - Scannable undirected advertising, 3 - Non connectable undirected advertising
   adv_params.chan_map = 7;
   adv_params.own_bdaddr_type = LE_RANDOM_ADDRESS; // Use random address
 

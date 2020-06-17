@@ -90,6 +90,7 @@ char* tokenizestr( char *data, char *argv[TOKENIZEARGMAX], int *argc ) {
   }
 
   *argc = i;
+  argv[i] = '\0';
 
 return line;
 }
