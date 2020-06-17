@@ -21,7 +21,7 @@
 #include <bluetooth/hci.h>
 #include <bluetooth/hci_lib.h>
 
-#include "ble_adv.h"
+#include "ble_pkt.h"
 
 #define HCI_REQ_TIMEOUT 5000
 
