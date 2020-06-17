@@ -251,7 +251,7 @@ command_t commands[] = {
     .desc = "[--dump|--load CSVFILE]\n\n"
       "\tAnalyze scanned advertisements and try to track devices\n"
       "\tExecute 'scan' first\n\n"
-      "\tCSVFILE - Dump or load scan results to/from CSV file\n",
+      "\tCSVFILE - Dump or load scan results to/from this CSV file\n",
     },
   {
     .cmd = cmd_lerandaddr,
