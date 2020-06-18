@@ -378,12 +378,12 @@ int ble_pkt_add( ble_pkt_t *new_pkt ) {
   // The for loop reached buffer end.
   // It means that buffer is full and we didn't see
   // that device address before
-  if ( (ble_pkts_size + (ble_pkts_size/2)) > BLE_PKTS_BUF_MAX ) {
+  if ( (ble_pkts_size*2) > BLE_PKTS_BUF_MAX ) {
     fprintf(stderr, "Reached maximum packet buffer size\n");
     return -1;
   }
 
-  ble_pkt_t **ble_pkts_new = (ble_pkt_t **) realloc(ble_pkts, (ble_pkts_size+(ble_pkts_size/2)) * sizeof(ble_pkt_t*));
+  ble_pkt_t **ble_pkts_new = (ble_pkt_t **) realloc(ble_pkts, ble_pkts_size*2 * sizeof(ble_pkt_t*));
   if ( ble_pkts_new == NULL ) {
     perror("Error while enlarging packet buffer");
     exit(ENOMEM);
@@ -394,7 +394,7 @@ int ble_pkt_add( ble_pkt_t *new_pkt ) {
   memset(ble_pkts+ble_pkts_size, 0, sizeof(ble_pkt_t*) * ble_pkts_size);
 
   ble_pkts[ble_pkts_size] = new_pkt;
-  ble_pkts_size += (ble_pkts_size/2);
+  ble_pkts_size *= 2;
 
 return 0;
 }
@@ -493,10 +493,11 @@ void badv_print() {
       }
 
       // Compare head with previously caught packet
-      if ( memcmp(pkt->data.ga->rpi, head_pkt->data.ga->rpi, 16) ||
-              memcmp(pkt->data.ga->aem, head_pkt->data.ga->aem, 4) ||
-              bacmp(&pkt->ba, &head_pkt->ba) ||
-              !pkt->older // we are at begining of whole device stream
+      if (
+          memcmp(pkt->data.ga->rpi, head_pkt->data.ga->rpi, 16) ||
+            memcmp(pkt->data.ga->aem, head_pkt->data.ga->aem, 4) ||
+            bacmp(&pkt->ba, &head_pkt->ba) ||
+            !pkt->older // we are at begining of whole device stream
          ) {
 
         if ( !pkt->older ) {
