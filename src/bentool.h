@@ -30,5 +30,6 @@
 #include "utils.h"
 #include "ble_hci.h"
 #include "ble_pkt.h"
+#include "ble_stream.h"
 
 #endif // __BENTOOL_H__

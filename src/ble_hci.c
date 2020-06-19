@@ -61,7 +61,7 @@ void print_dev_info( btdev_t *btdev ) {
   ba2str(&btdev->ba, addr);
   printf("Random BA: %s, ", addr);
 
-  en_ga_print(&btdev->ga_en);
+  ble_ga_adv_print(&btdev->ga_en);
 
   printf("\n");
 }
@@ -87,9 +87,6 @@ int ble_scan_events( int dd ) {
     printf("Could not set socket options\n");
     return -1;
   }
-
-  // Allocate advertisements buffer
-  if ( badv_init() < 0 ) return -1;
 
   abort_signal = 0;
   signal(SIGINT, &set_abort_signal);
@@ -123,7 +120,7 @@ int ble_scan_events( int dd ) {
     while ( reports_num-- ) {
 
       ble_pkt_t *new_pkt = ble_info2pkt(info);
-      if ( !new_pkt || ble_pkt_add(new_pkt) < 0 ) {
+      if ( !new_pkt || ble_stream_pkt_add(new_pkt) < 0 ) {
         abort_signal = 1;
         break;
       }
@@ -187,6 +184,8 @@ int ble_scan( btdev_t *btdev ) {
     perror("Enable scan failed");
     return 1;
   }
+
+  ble_stream_free();
 
   printf("Scanning for Bluetooth Advertisement packets...\n");
 

@@ -30,7 +30,7 @@ typedef struct {
   int dev_id;
   bdaddr_t ba;
 
-  en_ga_t ga_en;
+  ble_ga_adv_t ga_en;
 
 } btdev_t;
 

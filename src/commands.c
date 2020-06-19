@@ -139,11 +139,11 @@ int cmd_track( int argc, char **argv) {
   if ( argc > 1 ) {
 
     if ( !strcmp(argv[1], "--load" ) ) {
-      return badv_load_csv(argv[2]);
+      return ble_stream_load(argv[2]);
     }
 
     if ( !strcmp(argv[1], "--dump" ) ) {
-      return badv_dump_csv(argv[2]);
+      return ble_stream_dump(argv[2]);
     }
 
     fprintf(stderr, "help: Unknown option\n");
@@ -151,9 +151,9 @@ int cmd_track( int argc, char **argv) {
   }
 
   // Loop until we merge all possible devices
-  while ( badv_track_devices() > 0 ) ;
+  while ( ble_stream_track() > 0 ) ;
 
-  badv_print();
+  ble_stream_print();
 
 return 0;
 }

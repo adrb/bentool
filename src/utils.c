@@ -79,6 +79,11 @@ void print_tv( struct timeval *tv ) {
 
 }
 
+uint64_t tvusec( struct timeval *tv ) {
+  return tv->tv_sec*1000000 + tv->tv_usec;
+}
+
+
 void print_busyloop() {
 
   char *tab = "-\\|/";
