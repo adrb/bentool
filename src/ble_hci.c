@@ -24,7 +24,7 @@ int xhci_open_dev( btdev_t *btdev ) {
   // Get first available Bluetooth device
   if (btdev->dev_id < 0) {
     btdev->dev_id = hci_get_route(NULL);
-    hci_devba(btdev->dev_id, &btdev->ba);
+    hci_devba(btdev->dev_id, &btdev->bda);
   }
 
   dd = hci_open_dev(btdev->dev_id);
@@ -33,7 +33,7 @@ int xhci_open_dev( btdev_t *btdev ) {
     return -1;
   }
 
-//  hci_read_bd_addr(dd, &btdev->ba, HCI_REQ_TIMEOUT);
+//  hci_read_bd_addr(dd, &btdev->bda, HCI_REQ_TIMEOUT);
 
 return dd;
 }
@@ -58,7 +58,7 @@ void print_dev_info( btdev_t *btdev ) {
 
   if ( !btdev ) return;
 
-  ba2str(&btdev->ba, addr);
+  ba2str(&btdev->bda, addr);
   printf("Random BA: %s, ", addr);
 
   ble_ga_adv_print(&btdev->ga_en);
@@ -216,7 +216,7 @@ int ble_randaddr( btdev_t *btdev ) {
     return -1;
 
   memset(&cp, 0, sizeof(cp));
-  bacpy(&cp.bdaddr, &btdev->ba);
+  bacpy(&cp.bdaddr, &btdev->bda);
 
   memset(&rq, 0, sizeof(rq));
   rq.ogf = OGF_LE_CTL;

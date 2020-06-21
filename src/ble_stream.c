@@ -64,7 +64,7 @@ int ble_stream_dump(char *filename) {
       print_busyloop();
 
       char addr[18];
-      ba2str(&(pkt->ba), addr);
+      ba2str(&(pkt->bda), addr);
 
       fprintf(f, "%ld,%ld,%s,%d,",
         pkt->recv_time.tv_sec, pkt->recv_time.tv_usec,
@@ -147,7 +147,7 @@ int ble_stream_load(char *filename) {
         pkt->recv_time.tv_usec = atol(tok);
       break;
       case 2:
-        str2ba(tok, &pkt->ba);
+        str2ba(tok, &pkt->bda);
       break;
       case 3:
          pkt->rssi = atoi(tok);
@@ -248,7 +248,7 @@ int ble_stream_pkt_add( ble_pkt_t *pkt ) {
     }
 
     // Same BT Address
-    if ( !bacmp(&bps->pkt_latest->ba, &pkt->ba) ) {
+    if ( !bacmp(&bps->pkt_latest->bda, &pkt->bda) ) {
       break;
     }
 
@@ -330,7 +330,7 @@ void ble_stream_meta() {
 
       /* Now set inside of ble_stream_pkt_add
       // Set RPA change time if addresses don't match but RPI and AEM does
-      if ( !bps->rpa_last_change.tv_sec && bacmp(&pkt->ba, &pkt->older->ba) ) {
+      if ( !bps->rpa_last_change.tv_sec && bacmp(&pkt->bda, &pkt->older->ba) ) {
 
         if ( !memcmp(pkt->data.ga->rpi, pkt->older->data.ga->rpi, 16) &&
             !memcmp(pkt->data.ga->aem, pkt->older->data.ga->aem, 4) ) {
@@ -480,7 +480,7 @@ return merges;
 
 // Keep in mind that it process data in reverse order (from newest packet to oldest)
 void ble_stream_print() {
-
+/*
   ble_pkt_stream_t *bps;
   ble_pkt_t *seen_pkt, *pkt;
   int i = 0;
@@ -498,7 +498,7 @@ void ble_stream_print() {
       if ( !seen_pkt ||
             memcmp(pkt->data.ga->rpi, seen_pkt->data.ga->rpi, 16) ||
             memcmp(pkt->data.ga->aem, seen_pkt->data.ga->aem, 4) ||
-            bacmp(&pkt->ba, &seen_pkt->ba) ) {
+            bacmp(&pkt->bda, &seen_pkt->bda) ) {
 
         seen_pkt = pkt;
 
@@ -511,8 +511,8 @@ void ble_stream_print() {
     }
   }
 
+// */
 
-/*
   ble_pkt_stream_t *bps;
   ble_pkt_t *tail_pkt, *head_pkt, *pkt;
   double time_sum;
@@ -540,7 +540,7 @@ void ble_stream_print() {
       if (
           memcmp(pkt->data.ga->rpi, head_pkt->data.ga->rpi, 16) ||
             memcmp(pkt->data.ga->aem, head_pkt->data.ga->aem, 4) ||
-            bacmp(&pkt->ba, &head_pkt->ba) ||
+            bacmp(&pkt->bda, &head_pkt->bda) ||
             !pkt->older // we are at begining of whole device stream
          ) {
 
@@ -583,6 +583,6 @@ void ble_stream_print() {
 
     }
   }
-*/
+
 }
 

@@ -36,7 +36,7 @@ typedef struct ble_pkt_s {
   struct ble_pkt_s *newer;  // packet received after that packet
 
   uint8_t bdaddr_type;
-  bdaddr_t ba;
+  bdaddr_t bda;
   int rssi;
   struct timeval recv_time;
 

@@ -28,7 +28,7 @@
 typedef struct {
 
   int dev_id;
-  bdaddr_t ba;
+  bdaddr_t bda;
 
   ble_ga_adv_t ga_en;
 

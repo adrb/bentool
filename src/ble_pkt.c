@@ -25,7 +25,7 @@ void ble_pkt_print( ble_pkt_t *pkt, int print_datadump ) {
   print_tv( &pkt->recv_time );
 
   char addr[18];
-  ba2str(&(pkt->ba), addr);
+  ba2str(&(pkt->bda), addr);
 
   printf(", BD: %s, RSSI: %d, ", addr, pkt->rssi );
 
@@ -101,7 +101,7 @@ ble_pkt_t* ble_info2pkt( le_advertising_info *info ) {
   }
 
   pkt->bdaddr_type = info->bdaddr_type;
-  bacpy(&pkt->ba, &info->bdaddr);
+  bacpy(&pkt->bda, &info->bdaddr);
   pkt->rssi = (int8_t) ( *(info->data + info->length) );
 
 return pkt;

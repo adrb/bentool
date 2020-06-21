@@ -73,7 +73,7 @@ int cmd_dev( int argc, char **argv) {
   }
 
   if ( btdev.dev_id != -1 ) {
-    memset(&btdev.ba, 0, sizeof(bdaddr_t));
+    memset(&btdev.bda, 0, sizeof(bdaddr_t));
   }
 
   btdev.dev_id = hci_devid(argv[1]);
@@ -82,7 +82,7 @@ int cmd_dev( int argc, char **argv) {
     return 1;
   }
 
-  if ( hci_devba(btdev.dev_id, &btdev.ba) < 0) {
+  if ( hci_devba(btdev.dev_id, &btdev.bda) < 0) {
     perror("Device is not available");
     return 1;
   }
@@ -106,11 +106,11 @@ int cmd_lerandaddr( int argc, char **argv) {
     goto print_ba;
   }
 
-  str2ba(argv[1], &btdev.ba);
+  str2ba(argv[1], &btdev.bda);
 
 print_ba:
 
-  ba2str(&btdev.ba, addr);
+  ba2str(&btdev.bda, addr);
   printf("Random BA: %s\n", addr);
 
 return 0;
