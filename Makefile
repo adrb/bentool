@@ -12,7 +12,7 @@ TOPDIR = $(shell if [ "$$pwd" != "" ]; then echo $$PWD; else pwd; fi)
 INCLUDE = -I${TOPDIR}/src
 SOURCE = ${TOPDIR}/src
 
-BASE_CFLAGS = ${INCLUDE} -Wall -Wno-unused-variable -lreadline -lhistory -lm -lbluetooth
+BASE_CFLAGS = ${INCLUDE} -Wall -Wno-unused-variable -lreadline -lhistory -lm -lbluetooth -lcrypto
 RELEASE_CFLAGS=${BASE_CFLAGS} -O2
 DEBUG_CFLAGS=${BASE_CFLAGS} -g -DDEBUG
 

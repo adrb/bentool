@@ -27,7 +27,7 @@ void ble_pkt_print( ble_pkt_t *pkt, int print_datadump ) {
   char addr[18];
   ba2str(&(pkt->bda), addr);
 
-  printf(", BD: %s, RSSI: %d, ", addr, pkt->rssi );
+  printf(", BDA: %s, RSSI: %d, ", addr, pkt->rssi );
 
   switch (pkt->data_type) {
     case BLE_ADV_INFO:

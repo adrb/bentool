@@ -22,6 +22,7 @@
 char *hrbytes(char *buf, unsigned int buflen, long long bytes);
 void hexdump(unsigned char *data , int datalen);
 void printhex(unsigned char *data , int datalen);
+void hex2raw( uint8_t *dest, char *src, int len);
 void print_tv( struct timeval *tv );
 uint64_t tvusec( struct timeval *tv );
 

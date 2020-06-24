@@ -11,8 +11,27 @@
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/hci.h>
 #include <bluetooth/hci_lib.h>
+#include <openssl/evp.h>
+#include <openssl/aes.h>
+#include <openssl/err.h>
 
 #include "ble_pkt.h"
+
+typedef struct ble_bonding_s {
+
+  struct ble_bonding_s *next;
+
+  char *name;
+
+  bdaddr_t bda_public;
+
+  uint8_t irk[16];
+
+} ble_bonding_t;
+
+int ble_resolve_rpa(bdaddr_t *bda, uint8_t irk[16]);   // returns zero if valid
+int ble_bonding_add(ble_bonding_t *bonding);
+void ble_bonding_print();
 
 typedef struct ble_pkt_stream_s {
 

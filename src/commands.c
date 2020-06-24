@@ -111,7 +111,29 @@ int cmd_lerandaddr( int argc, char **argv) {
 print_ba:
 
   ba2str(&btdev.bda, addr);
-  printf("Random BA: %s\n", addr);
+  printf("Random BDA: %s\n", addr);
+
+return 0;
+}
+
+int cmd_resolve_rpa( int argc, char **argv) {
+
+  char addr[18];
+  uint8_t key[16];
+  bdaddr_t bda;
+
+  CHECK_ARGS_NUM(2);
+
+  memset(key, 0, 16);
+
+  str2ba(argv[1], &bda);
+  hex2raw(key, argv[2], 16);
+
+  if ( ble_resolve_rpa(&bda, key) ) {
+    printf("Mismatch\n");
+  } else {
+    printf("Resolved\n");
+  }
 
 return 0;
 }
@@ -123,6 +145,39 @@ int cmd_beacon( int argc, char **argv) {
 return ble_beacon_ga(&btdev);
 }
 
+int cmd_bonding( int argc, char **argv) {
+
+  char addr[18];
+  ble_bonding_t *bk;
+
+  CHECK_ARGS_MAXNUM(3);
+
+  if ( argc == 4 ) {
+
+    bk = calloc(1, sizeof(ble_bonding_t) );
+    if (!bk) {
+      perror("Can't allocate new bonding");
+      return -1;
+    }
+
+    bk->name = strdup(argv[1]);
+
+    if ( !strcmp(argv[2], "--bda" ) ) {
+      str2ba(argv[3], &bk->bda_public);
+    }
+
+    if ( !strcmp(argv[2], "--irk" ) ) {
+      hex2raw(bk->irk, argv[3], 16);
+    }
+
+    ble_bonding_add(bk);
+  }
+
+  ble_bonding_print();
+
+return 0;
+}
+
 int cmd_scan( int argc, char **argv) {
 
   CHECK_ARGS_NUM(0);
@@ -131,8 +186,6 @@ return ble_scan(&btdev);
 }
 
 int cmd_track( int argc, char **argv) {
-
-  int opt;
 
   CHECK_ARGS_MAXNUM(2);
 
@@ -146,7 +199,7 @@ int cmd_track( int argc, char **argv) {
       return ble_stream_dump(argv[2]);
     }
 
-    fprintf(stderr, "help: Unknown option\n");
+    fprintf(stderr, "Unknown option\n");
     return -1;
   }
 
@@ -246,6 +299,15 @@ command_t commands[] = {
       "\tAdvertise exposure notification beacons (Ctrl-C to stop)\n",
   },
   {
+    .cmd = cmd_bonding,
+    .name = "bonding",
+    .desc = "[NAME] [--bda BDADDR |--irk IRK]\n\n"
+      "\tSet or list bonding info\n\n"
+      "\tBDADDR - Bluetooth device address\n"
+      "\tIRK    - 128-bit Identity Resolving Key\n",
+  },
+
+  {
     .cmd = cmd_track,
     .name = "track",
     .desc = "[--dump|--load CSVFILE]\n\n"
@@ -258,6 +320,12 @@ command_t commands[] = {
     .name = "lerandaddr",
     .desc = "[BDADDR]\n\n"
       "\tDisplay or set BLE Random Address\n",
+  },
+  {
+    .cmd = cmd_resolve_rpa,
+    .name = "resolve_rpa",
+    .desc = "[BDADDR] [IRK]\n\n"
+      "\tValidate Random Private Address against 128bit IRK key\n",
   },
   {
     .cmd = cmd_dev,

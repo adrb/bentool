@@ -71,6 +71,20 @@ void printhex(unsigned char *data , int datalen) {
 
 }
 
+void hex2raw( uint8_t *dest, char *src, int len) {
+
+  unsigned int val, i;
+
+  for ( i = 0; i < (len << 1) ; i += 2 ) {
+
+    val = 0;
+    sscanf(src+i, "%02x", &val);
+
+    dest[i >> 1] = val & 0xff;
+  }
+
+}
+
 void print_tv( struct timeval *tv ) {
 
   struct tm *tm = localtime(&tv->tv_sec);

@@ -59,7 +59,7 @@ void print_dev_info( btdev_t *btdev ) {
   if ( !btdev ) return;
 
   ba2str(&btdev->bda, addr);
-  printf("Random BA: %s, ", addr);
+  printf("Random BDA: %s, ", addr);
 
   ble_ga_adv_print(&btdev->ga_en);
 
@@ -335,4 +335,5 @@ done:
 
 return 0;
 }
+
 

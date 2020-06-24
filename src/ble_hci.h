@@ -30,6 +30,8 @@ typedef struct {
   int dev_id;
   bdaddr_t bda;
 
+  uint8_t irk[16]; // Identity Resolving Key
+
   ble_ga_adv_t ga_en;
 
 } btdev_t;

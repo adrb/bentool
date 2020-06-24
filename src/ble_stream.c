@@ -7,7 +7,96 @@
 
 #include "bentool.h"
 
+ble_bonding_t *ble_bonding = NULL;
 ble_pkt_stream_t *ble_stream = NULL;
+
+// BT Core 5.0 spec, section 2.2.1 and 2.2.2
+//
+// Verification example with openssl for 4a:a0:d4:ff:c8:57 against IRK key e2270523033eb8f92204cba9ea221cf3 :
+//  # printf "\x00\x00\x00\x00\x0\x0\x0\x0\x0\x0\x0\x0\x0\x4a\xa0\xd4" | openssl enc -p -aes-128-ecb -K "e2270523033eb8f92204cba9ea221cf3" -nosalt -nopad -out /tmp/bin && hexdump /tmp/bin
+int ble_resolve_rpa(bdaddr_t *bda, uint8_t irk[16]) {
+
+  AES_KEY aes_ekey;
+  uint8_t in[16], out[16];
+
+  if ( !bda || (bda->b[5]&0xc0) != 0x40 ||                  // is it resolvable device address?
+       !memcmp(irk,"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 16)  // key needs to be set
+       ) {
+      return 1;
+  }
+
+  memset(in, 0, 16);
+  memset(out, 0, 16);
+
+  // set 24bit random value (prand)
+  in[13] = bda->b[5];
+  in[14] = bda->b[4];
+  in[15] = bda->b[3];
+
+  AES_set_encrypt_key(irk, 128, &aes_ekey);
+  AES_encrypt(in, out, &aes_ekey);
+
+  // hash matched?
+  if ( out[13] == bda->b[2] && out[14] == bda->b[1] && out[15] == bda->b[0] )
+    return 0;
+
+return 1;
+}
+
+int ble_bonding_add(ble_bonding_t *new_bk) {
+
+  ble_bonding_t *bk;
+
+  if ( !new_bk || !new_bk->name ) return 1;
+
+  for ( bk = ble_bonding ; bk ; bk = bk->next ) {
+    if ( !strncmp(new_bk->name, bk->name, strlen(bk->name)-1 ) )
+      break;
+  }
+
+  // reset existing bonding
+  if ( bk ) {
+
+    if ( memcmp(new_bk->bda_public.b, "\0\0\0\0\0\0", 6) ) {
+      bacpy(&bk->bda_public, &new_bk->bda_public);
+    }
+
+    if ( memcmp(new_bk->irk, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 16) ) {
+      memcpy(bk->irk, new_bk->irk, 16);
+    }
+
+    free(new_bk->name);
+    free(new_bk);
+  } else {
+
+    new_bk->next = ble_bonding;
+    ble_bonding = new_bk;
+  }
+
+return 0;
+}
+
+void ble_bonding_print() {
+  ble_bonding_t *bk;
+  char addr[18];
+
+  for ( bk = ble_bonding ; bk ; bk = bk->next ) {
+
+    if ( bk->name ) {
+      printf("Name: %s, ", bk->name);
+    }
+
+    if ( memcmp(bk->bda_public.b, "\0\0\0\0\0\0", 6) ) {
+      ba2str(&bk->bda_public, addr);
+      printf("BDA: %s, ", addr);
+    }
+
+    printf("IRK: ");
+    printhex((void*)bk->irk, 16);
+    printf("\n");
+
+  }
+}
 
 void ble_stream_free_p( ble_pkt_stream_t *bps ) {
 
@@ -349,11 +438,12 @@ void ble_stream_meta() {
 // Keep in mind that it process data in reverse order (from newest packet to oldest)
 int ble_stream_track() {
 
+  ble_bonding_t *bk;
   ble_pkt_stream_t *bps_older, *bps_newer;
   ble_pkt_t *pkt, *last_pkt, *next_pkt;
   double newer_avg_gap, older_avg_gap;
   uint64_t bps_rpa_gap;
-  int merges = 0, older_index, newer_index;
+  int merges = 0, older_index, newer_index, bonded;
 
   if ( !ble_stream ) {
     fprintf(stderr, "No data to track\n");
@@ -391,42 +481,59 @@ int ble_stream_track() {
       // No GA packets in this stream
       if ( !next_pkt ) continue;
 
-      // Next packet before our device last packet?
-      if ( next_pkt->recv_time.tv_sec < last_pkt->recv_time.tv_sec ) {
-        continue;
+      // check bonding
+      for ( bonded = 0, bk = ble_bonding ; bk ; bk = bk->next ) {
+
+        // Resolved to the same device
+        if ( !ble_resolve_rpa( &next_pkt->bda, bk->irk) &&
+            !ble_resolve_rpa( &last_pkt->bda, bk->irk) ) {
+
+          bonded = 1;
+          break;
+        }
       }
 
-      // Too long packet gap?
-      if ( (next_pkt->recv_time.tv_sec - last_pkt->recv_time.tv_sec) > 11 ) {
-        continue;
+      bps_rpa_gap = 0;
+
+      // No bonding, so we guess
+      if ( !bonded ) {
+        // Next packet before our device last packet?
+        if ( next_pkt->recv_time.tv_sec < last_pkt->recv_time.tv_sec ) {
+          continue;
+        }
+
+        // Too long packet gap?
+        if ( (next_pkt->recv_time.tv_sec - last_pkt->recv_time.tv_sec) > 11 ) {
+          continue;
+        }
+
+        // Average stream gap too different?
+        older_avg_gap = ( (double)bps_newer->pkt_gap_usum / (double)bps_newer->pkts )/1000000.0;
+        newer_avg_gap = ( (double)bps_older->pkt_gap_usum / (double)bps_older->pkts )/1000000.0;
+        if ( fabs(newer_avg_gap - older_avg_gap) > 50.0 ) { // allowed 50ms diff
+          continue;
+        }
+
+        // Check RPA interval if it's set
+        if ( bps_newer->rpa_last_change.tv_sec && bps_older->rpa_last_change.tv_sec ) {
+          bps_rpa_gap = labs(tvusec(&bps_newer->rpa_last_change) - tvusec(&bps_older->rpa_last_change));
+
+          // 15min with some variation
+          if ( bps_rpa_gap > 910*1000000 && bps_rpa_gap < 890*1000000 ) continue;
+
+        } else {
+          bps_rpa_gap = 0;
+        }
+
+        // RSSI more or less the same?
+        if ( abs(next_pkt->rssi - last_pkt->rssi) > 20 ) {
+          continue;
+        }
       }
 
-      // Average stream gap too different?
-      older_avg_gap = ( (double)bps_newer->pkt_gap_usum / (double)bps_newer->pkts )/1000000.0;
-      newer_avg_gap = ( (double)bps_older->pkt_gap_usum / (double)bps_older->pkts )/1000000.0;
-      if ( fabs(newer_avg_gap - older_avg_gap) > 50.0 ) { // allowed 50ms diff
-        continue;
-      }
 
-      // Check RPA interval if it's set
-      if ( bps_newer->rpa_last_change.tv_sec && bps_older->rpa_last_change.tv_sec ) {
-        bps_rpa_gap = labs(tvusec(&bps_newer->rpa_last_change) - tvusec(&bps_older->rpa_last_change));
-
-        // 15min with some variation
-        if ( bps_rpa_gap > 910*1000000 && bps_rpa_gap < 890*1000000 ) continue;
-
-      } else {
-        bps_rpa_gap = 0;
-      }
-
-      // RSSI more or less the same?
-      if ( abs(next_pkt->rssi - last_pkt->rssi) > 20 ) {
-        continue;
-      }
-
-
-      printf("Merging stream %d to %d:\n\t newer - average gap between packets %.3lfs, last RPA change ",
-        older_index, newer_index,
+      printf("Merging stream %d to %d (%s):\n\t newer - average gap between packets %.3lfs, last RPA change ",
+        older_index, newer_index, bk ? bk->name : "not bonded",
         ( (double)bps_newer->pkt_gap_usum / (double)bps_newer->pkts )/1000000.0);
       print_tv(&bps_newer->rpa_last_change);
       printf(", RPA inverval %.3lfs\n\t  head ", bps_newer->rpa_interval_us/1000000.0 );
@@ -480,7 +587,7 @@ return merges;
 
 // Keep in mind that it process data in reverse order (from newest packet to oldest)
 void ble_stream_print() {
-/*
+// /*
   ble_pkt_stream_t *bps;
   ble_pkt_t *seen_pkt, *pkt;
   int i = 0;
@@ -511,7 +618,7 @@ void ble_stream_print() {
     }
   }
 
-// */
+/*
 
   ble_pkt_stream_t *bps;
   ble_pkt_t *tail_pkt, *head_pkt, *pkt;
@@ -583,6 +690,6 @@ void ble_stream_print() {
 
     }
   }
-
+// */
 }
 
