@@ -33,8 +33,8 @@ Basically it uses two metods. Assuming that tracked device is never going
 out of receiver's range it can classify traffic to device based on factors like :
 
   - when devices changes broadcasted data
-  - how frequent it sends data
-  - when it has been received
+  - how frequently device sends data
+  - when broadcast has been received
 
 Second technique is based on tracking device BT address, broadcasted along with
 EN data. Contrary to what is written in [specification](https://covid19-static.cdn-apple.com/applications/covid19/current/static/contact-tracing/pdf/ExposureNotification-BluetoothSpecificationv1.2.pdf), devices uses Resolvable Random Private addreses with fixed interval changes.
@@ -43,15 +43,15 @@ So what does that means? It means that if you pair your phone with another devic
 that devices can get your Identity Resolution key (IRK), which allows to track
 your changing BT address.
 
-### How to get the IRK key?
+### How do i get the IRK key?
 
 The easiest way is to pair your device with Windows or Linux machine.
 
 Then on windows download [psexec](https://docs.microsoft.com/en-us/sysinternals/downloads/psexec) and run regedit as System account:
 
 ```
-PsExec.exe -s -i reg export HKLM\SYSTEM\CurrentControlSet\Services\BTHPORT\Parameters\Keys c:\bt_keys.reg /Y
-find "IRK" "C:\bt_keys.reg"
+C:\> PsExec.exe -s -i reg export HKLM\SYSTEM\CurrentControlSet\Services\BTHPORT\Parameters\Keys c:\bt_keys.reg /Y
+C:\> find "IRK" "C:\bt_keys.reg"
 ```
 
 For Linux use command similar to :
@@ -80,8 +80,7 @@ $ make
 ## Usage:
 
 Please keep in mind that it's work in progress, so expect major changes
-with every commit. The best you can do is run the program and type "help"
-then hit enter key:
+with every commit. The best you can do is type "help" then hit enter key:
 
 ```
 # ./bentool
